@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig, AxiosError 
 
 // Create the Axios Instance
 const api: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:5297/api', // Matches your .NET API
+    baseURL: 'https://localhost:7118/api', // Matches your .NET API
     headers: {
         'Content-Type': 'application/json'
     }
