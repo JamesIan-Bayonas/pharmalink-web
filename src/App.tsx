@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, RoleRoute } from '../src/routes/ProtectedRoutes';
+import Login from './features/auth/Login';
+import DashboardLayout from './layouts/DashboardLayout';
 
 // Placeholders (Create these files later as .tsx)
-const Login = () => <h2 className = 'text-center'>Login Page</h2>;
 const Dashboard = () => <h2>Dashboard (Common)</h2>;
 const Inventory = () => <h2>Inventory (Admin Only)</h2>;
 const POS = () => <h2>POS Terminal (Pharmacist/Admin)</h2>;
@@ -20,8 +21,11 @@ function App() {
 
           {/* Protected Area */}
           <Route element={<ProtectedRoute />}>
-             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-             <Route path="/dashboard" element={<Dashboard />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
              {/* Role Based Access */}
              <Route element={<RoleRoute allowedRoles={['Admin', 'Pharmacist']} />}>
