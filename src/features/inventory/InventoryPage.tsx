@@ -2,21 +2,42 @@ import { useEffect, useState } from 'react';
 import { getMedicines, deleteMedicine, type Medicine, type PaginationMeta } from '../../services/medicineService';
 import { getAllCategories } from '../../services/categoryService';
 import { useAuth } from '../../context/AuthContext';
+import AddMedicineModal from './AddMedicineModal';
 
 const InventoryPage = () => {
     const { user } = useAuth();
     
     // Data State
     const [medicines, setMedicines] = useState<Medicine[]>([]);
-    const [categories, setCategories] = useState<Record<number, string>>({}); // Map ID -> Name
+    const [categories, setCategories] = useState<Record<number, string>>({});
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     
     // UI State
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    // 1. Load Categories FIRST (Lookup Map)
+    // Helper Function: Fetch Inventory
+    // (Moved OUTSIDE useEffect so the Modal can use it to refresh data)
+    const fetchInventory = async () => {
+        setLoading(true);
+        try {
+            const response = await getMedicines({ 
+                pageNumber: page, 
+                pageSize: 10, 
+                searchTerm: searchTerm 
+            });
+            setMedicines(response.data);
+            setMeta(response.meta);
+        } catch (error) {
+            console.error("Failed to load inventory", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // initially Load Categories (Lookup Map)
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -32,28 +53,10 @@ const InventoryPage = () => {
         fetchCategories();
     }, []);
 
-    // 2. Load Medicines whenever Page or Search changes
+    // Load Medicines whenever Page or Search changes
     useEffect(() => {
-        const fetchInventory = async () => {
-            setLoading(true);
-            try {
-                // Notice we debounced search in a real app, but this works for now
-                const response = await getMedicines({ 
-                    pageNumber: page, 
-                    pageSize: 10, 
-                    searchTerm: searchTerm 
-                });
-                setMedicines(response.data);
-                setMeta(response.meta);
-            } catch (error) {
-                console.error("Failed to load inventory", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchInventory();
-    }, [page, searchTerm]); // Re-run    when these change
+    }, [page, searchTerm]); // Re-run when these change
 
     // Delete Handler
     const handleDelete = async (id: number) => {
@@ -82,7 +85,8 @@ const InventoryPage = () => {
                         className="border p-2 rounded w-full md:w-64"
                     />
                     {user?.role === 'Admin' && (
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
+                        <button onClick={() => setIsAddModalOpen(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
                             + Add Medicine
                         </button>
                     )}
@@ -166,6 +170,16 @@ const InventoryPage = () => {
                     </div>
                 </div>
             )}
+            
+            {/* The Modal Component (Added Here) */}
+            <AddMedicineModal 
+                isOpen={isAddModalOpen} 
+                onClose={() => setIsAddModalOpen(false)} 
+                onSuccess={() => {
+                    setIsAddModalOpen(false); 
+                    fetchInventory(); // Calls the function we moved up
+                }} 
+            />
         </div>
     );
 };
