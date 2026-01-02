@@ -3,12 +3,15 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, RoleRoute } from '../src/routes/ProtectedRoutes';
 import Login from './features/auth/Login';
 import DashboardLayout from './layouts/DashboardLayout';
+import DashboardPage from './features/dashboard/DashboardPage';
+import InventoryPage from './features/inventory/InventoryPage';
+import POSTerminalPage from './features/pos/POSTerminalPage';
 
 // Placeholders (Create these files later as .tsx)
-const Dashboard = () => <h2>Dashboard (Common)</h2>;
-const Inventory = () => <h2>Inventory (Admin Only)</h2>;
+// const Dashboard = () => <h2>Dashboard (Common)</h2>;
+// const Inventory = () => <h2>Inventory (Admin Only)</h2>;
 const POS = () => <h2>POS Terminal (Pharmacist/Admin)</h2>;
-const Unauthorized = () => <h2>Access Denied</h2>;
+const Unauthorized = () => <div className="p-8 text-center text-red-600 text-xl font-bold">Access Denied</div>; 
 
 function App() {
   return (
@@ -21,20 +24,18 @@ function App() {
 
           {/* Protected Area */}
           <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Route>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+            {/* Dashboard Layout with Nested Routes */}
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<RoleRoute allowedRoles={['Admin', 'Pharmacist']} />}>
+                  <Route path="/sales" element={<POSTerminalPage />} />
+              </Route>
+              <Route element={<RoleRoute allowedRoles={['Admin']} />}>
+                  <Route path="/inventory" element={<InventoryPage />} />
+              </Route>
 
-             {/* Role Based Access */}
-             <Route element={<RoleRoute allowedRoles={['Admin', 'Pharmacist']} />}>
-                <Route path="/sales" element={<POS />} />
-             </Route>
-
-             <Route element={<RoleRoute allowedRoles={['Admin']} />}>
-                <Route path="/inventory" element={<Inventory />} />
-             </Route>
+            </Route>
           </Route>
 
         </Routes>
