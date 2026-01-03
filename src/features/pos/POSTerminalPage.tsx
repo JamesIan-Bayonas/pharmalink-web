@@ -96,9 +96,9 @@ const POSTerminalPage = () => {
                 quantity: item.cartQuantity
             }));
 
-            const result = await createSale({ salesItems });
+            const result = await createSale({ items: salesItems });
             
-            alert(`Sale Successful! ID: ${result.saleId}`);
+            alert(`Sale Successful! ID: ${result.id}`);
             setCart([]); // Clear cart
             // Optional: Refresh medicine list to update stock numbers
             setSearchTerm(''); 

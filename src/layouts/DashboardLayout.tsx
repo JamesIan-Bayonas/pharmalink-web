@@ -25,22 +25,25 @@ const DashboardLayout = () => {
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2">
-                    <Link to="/dashboard" className={`block px-4 py-2 rounded ${isActive('/dashboard')}`}>
+                    <Link to="/dashboard" className={`block px-4 py-2 rounded text-center ${isActive('/dashboard')}`}>
                         Dashboard
                     </Link>
 
                     {/* SHARED LINKS (Admin & Pharmacist) */}
-                    <Link to="/sales" className={`block px-4 py-2 rounded ${isActive('/sales')}`}>
+                    <Link to="/sales" className={`block px-4 py-2 rounded text-center ${isActive('/sales')}`}>
                         POS Terminal
                     </Link>
 
                     {/* ADMIN ONLY LINKS */}
                     {user?.role === 'Admin' && (
                         <>
-                            <Link to="/inventory" className={`block px-4 py-2 rounded ${isActive('/inventory')}`}>
+                            <Link to="/inventory" className={`block px-4 py-2 rounded text-center ${isActive('/inventory')}`}>
                                 Inventory Management
                             </Link>
-                            <Link to="/users" className={`block px-4 py-2 rounded ${isActive('/users')}`}>
+                            <Link to="/history" className={`block px-4 py-2 rounded text-center ${isActive('/history')}`}>
+                                Sales History
+                            </Link>
+                            <Link to="/users" className={`block px-4 py-2 rounded text-center ${isActive('/users')}`}>
                                 User Management
                             </Link>
                         </>
@@ -49,7 +52,7 @@ const DashboardLayout = () => {
 
                 <div className="p-4 border-t border-gray-700">
                     <div className="mb-2 text-sm text-gray-400">
-                        Logged in as: <span className="text-white font-bold">{user?.username}</span>
+                        Logged in as: <span className="text-white font-bold">{user?.userName}</span>
                         <br />
                         <span className="text-xs uppercase tracking-wider">{user?.role}</span>
                     </div>
