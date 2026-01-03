@@ -46,13 +46,16 @@ const DashboardLayout = () => {
                             <Link to="/users" className={`block px-4 py-2 rounded text-center ${isActive('/users')}`}>
                                 User Management
                             </Link>
+                            <Link to="/categories" className={`block px-4 py-2 rounded text-center ${isActive('/categories')}`}>
+                                Category Management
+                            </Link>
                         </>
                     )}
                 </nav>
 
                 <div className="p-4 border-t border-gray-700">
                     <div className="mb-2 text-sm text-gray-400">
-                        Logged in as: <span className="text-white font-bold">{user?.userName}</span>
+                        Logged in as: <span className="text-white font-bold">{user?.username}</span>
                         <br />
                         <span className="text-xs uppercase tracking-wider">{user?.role}</span>
                     </div>
