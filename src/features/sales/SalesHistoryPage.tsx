@@ -24,7 +24,7 @@ const SalesHistoryPage = () => {
             } finally {
                 setLoading(false);
             }
-        };
+        };    
 
         fetchSales();
     }, [page]);

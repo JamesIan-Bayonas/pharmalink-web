@@ -12,15 +12,14 @@ const UserManagementPage = () => {
 
     // Form State
     const [formData, setFormData] = useState({
-        username: '',
-        email: '',
+        userName: '',
         password: '',
         role: 'Pharmacist' // Default role
     });
 
     const fetchUsers = async () => {
         try {
-            const data = await getAllUsers();
+    const data  = await getAllUsers();
             setUsers(data);
         } catch (error) {
             console.error("Failed to load users", error);
@@ -49,7 +48,7 @@ const UserManagementPage = () => {
             await registerUser(formData);
             alert("User created successfully!");
             setIsModalOpen(false);
-            setFormData({ username: '', email: '', password: '', role: 'Pharmacist' }); // Reset
+            setFormData({ userName: '', password: '', role: 'Pharmacist' }); // Reset
             fetchUsers(); // Refresh list
         } catch (error: any) {
             alert("Failed to create user: " + (error.response?.data?.message || "Unknown error"));
@@ -76,10 +75,12 @@ const UserManagementPage = () => {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-100 text-gray-600 uppercase text-sm">
                         <tr>
+                            <th className="py-3 px-6">Id</th>
                             <th className="py-3 px-6">Username</th>
-                            <th className="py-3 px-6">Email</th>
+                            {/* <th className="py-3 px-6">Email</th> */}
                             <th className="py-3 px-6">Role</th>
-                            <th className="py-3 px-6 text-center">Actions</th>
+                            {/* <th className="py-3 px-6 text-center">Actions</th> */}
+                            <th className="py-3 px-6 text-center">Delete</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 text-sm">
@@ -87,19 +88,21 @@ const UserManagementPage = () => {
                             <tr><td colSpan={4} className="text-center py-4">Loading...</td></tr>
                         ) : users.map((u) => (
                             <tr key={u.id} className="border-b hover:bg-gray-50">
-                                <td className="py-3 px-6 font-medium text-gray-900">
-                                    {u.username} 
-                                    {u.username === currentUser?.username && <span className="ml-2 text-xs text-blue-500">(You)</span>}
+                                <td className="py-3 px-6">{u.id}</td>
+                                <td className="py-3 px-6  text-gray-900">
+                                    {/* FIX 1: Use u.userName instead of u.username */}
+                                    {u.userName}
+                                    {/* FIX 2: Check matching property (Assuming AuthContext uses 'username', keep it. If it uses 'userName', update it) */}
+                                    {u.userName === currentUser?.username && <span className="ml-2 text-xs text-blue-500">(You)</span>}
                                 </td>
-                                <td className="py-3 px-6">{u.email}</td>
                                 <td className="py-3 px-6">
                                     <span className={`px-2 py-1 rounded text-xs font-bold ${u.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
                                         {u.role}
                                     </span>
                                 </td>
                                 <td className="py-3 px-6 text-center">
-                                    {/* Prevent deleting yourself */}
-                                    {u.username !== currentUser?.username && (
+                                    {/* FIX 3: Update the check here too */}
+                                    {u.userName !== currentUser?.username && (
                                         <button 
                                             onClick={() => handleDelete(u.id)}
                                             className="text-red-500 hover:text-red-700 font-bold"
@@ -124,18 +127,18 @@ const UserManagementPage = () => {
                                 <label className="block text-sm font-medium">Username</label>
                                 <input 
                                     required type="text" className="w-full border p-2 rounded"
-                                    value={formData.username}
-                                    onChange={e => setFormData({...formData, username: e.target.value})}
+                                    value={formData.userName}
+                                    onChange={e => setFormData({...formData, userName: e.target.value})}
                                 />
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium">Email</label>
                                 <input 
                                     required type="email" className="w-full border p-2 rounded"
                                     value={formData.email}
                                     onChange={e => setFormData({...formData, email: e.target.value})}
                                 />
-                            </div>
+                            </div> */}
                             <div>
                                 <label className="block text-sm font-medium">Password</label>
                                 <input 

@@ -3,10 +3,15 @@ import api from './api';
 export interface Category {
     id: number;
     name: string;
+    medicineCount?: number;
 }
 
 // Defines what we send when creating a category
 export interface CreateCategoryRequest {
+    name: string;
+}
+
+export interface UpdateCategoryRequest {
     name: string;
 }
 
@@ -18,6 +23,10 @@ export const getAllCategories = async (): Promise<Category[]> => {
 export const createCategory = async (data: CreateCategoryRequest): Promise<{ id: number; message: string }> => {
     const response = await api.post('/Categories', data);
     return response.data;
+};  
+
+export const updateCategory = async (id: number, data: UpdateCategoryRequest): Promise<void> => {
+    await api.put(`/Categories/${id}`, data);
 };
 
 export const deleteCategory = async (id: number): Promise<void> => {

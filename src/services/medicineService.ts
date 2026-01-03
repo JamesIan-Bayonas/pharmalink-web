@@ -38,6 +38,7 @@ export interface MedicineParams {
     pageSize?: number;
     searchTerm?: string;
     orderBy?: string;
+    categoryId?: number;
 }
 
 export const getMedicines = async (params: MedicineParams): Promise<MedicineApiResponse> => {

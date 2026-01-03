@@ -21,7 +21,7 @@ export interface SaleItemResponse {
     subTotal: number;
 }
 
-export interface CreateSaleRequest {
+export interface CreateSaleRequest {    
     items: SaleItemDto[];
 }
 
