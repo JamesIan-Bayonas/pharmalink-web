@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getSales, type SaleResponse, type PaginationMeta } from '../../services/saleService';
+// 1. IMPORT THE GHOST COMPONENT
+// Note: Ensure the filename matches yours (Reciept vs Receipt)
+import PrintableReceipt, { type ReceiptData } from '../pos/PrintableReciept'; 
 
 const SalesHistoryPage = () => {
 
@@ -7,11 +10,9 @@ const SalesHistoryPage = () => {
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-
-    // Modal State used for viewing receipt details
     const [selectedSale, setSelectedSale] = useState<SaleResponse | null>(null);
+    const [printData, setPrintData] = useState<ReceiptData | null>(null);
 
-    // Fetch Data
     useEffect(() => {
         const fetchSales = async () => {
             setLoading(true);
@@ -25,9 +26,35 @@ const SalesHistoryPage = () => {
                 setLoading(false);
             }
         };    
-
         fetchSales();
     }, [page]);
+
+    useEffect(() => {
+        if (printData) {
+            const timer = setTimeout(() => {
+                window.print();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [printData]);
+
+    // ADAPTER: TRANSLATES 'SaleResponse' -> 'ReceiptData'
+    const handlePrint = (sale: SaleResponse) => {
+        const adapterData: ReceiptData = {
+            id: sale.id,
+            date: sale.transactionDate,
+            total: sale.totalAmount,
+            cashierName: `Staff #${sale.userId}`, 
+            items: sale.items.map(item => ({
+                name: item.medicineName, 
+                qty: item.quantity,
+                price: item.unitPrice,
+                total: item.subTotal
+            }))
+        };
+
+        setPrintData(adapterData);
+    };
 
     return (
         <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
@@ -110,7 +137,7 @@ const SalesHistoryPage = () => {
                 </div>
             )}
 
-            {/* RECEIPT MODAL embedded*/}
+            {/* RECEIPT MODAL */}
             {selectedSale && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-xl max-h-[90vh] flex flex-col">
@@ -140,15 +167,24 @@ const SalesHistoryPage = () => {
                             <span className="text-green-600">₱{selectedSale.totalAmount.toFixed(2)}</span>
                         </div>
                         
-                        <button 
-                            onClick={() => setSelectedSale(null)}
-                            className="mt-6 w-full py-2 bg-gray-800 text-white rounded hover:bg-gray-900"
-                        >
-                            Close
-                        </button>
+                        <div className="flex gap-2 mt-6">
+                            <button 
+                                onClick={() => handlePrint(selectedSale)}
+                                className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold"
+                            >
+                                Print
+                            </button>
+                            <button 
+                                onClick={() => setSelectedSale(null)}
+                                className="flex-1 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
+            <PrintableReceipt data={printData} />
         </div>
     );
 };
