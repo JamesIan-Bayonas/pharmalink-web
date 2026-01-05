@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { getDashboardStats, type DashboardStats } from '../../services/dashboardService';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardPage = () => {
     const { user } = useAuth();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -85,16 +87,23 @@ const DashboardPage = () => {
                     </div>
                     {/* Role Based Action Button */}
                     {user?.role === 'Admin' ? (
-                         <button className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded hover:bg-blue-700">
+                         <button 
+                         onClick={() => navigate('/inventory')}
+                         className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded hover:bg-blue-700">
                             Manage Inventory
                          </button>
                     ) : (
-                        <button className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded hover:bg-green-700">
+                        <button 
+                            onClick={() => navigate('/sales')} 
+                            className="px-4  py-2 text-sm font-bold text-white bg-green-600 rounded hover:bg-green-700"
+                        >
                             New Transaction
                         </button>
                     )}
                 </div>
             </div>
+
+
         </div>
     );
 };
