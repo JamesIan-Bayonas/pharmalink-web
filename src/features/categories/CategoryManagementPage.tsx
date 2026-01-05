@@ -6,11 +6,18 @@ import {
     updateCategory,
     type Category 
 } from '../../services/categoryService';
+import { getMedicines, type Medicine } from '../../services/medicineService';
 
 const CategoryManagementPage = () => {
+    // Category State
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     
+    // Accordion State (Which row is open?)
+    const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
+    const [expandedMedicines, setExpandedMedicines] = useState<Medicine[]>([]);
+    const [loadingMedicines, setLoadingMedicines] = useState(false);
+
     // Form State
     const [formName, setFormName] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -30,41 +37,61 @@ const CategoryManagementPage = () => {
         fetchCategories();
     }, []);
 
+    // === NEW LOGIC: HANDLE ACCORDION CLICK ===
+    const toggleCategory = async (catId: number) => {
+        // If clicking the already open one, close it
+        if (expandedCategoryId === catId) {
+            setExpandedCategoryId(null);
+            setExpandedMedicines([]);
+            return;
+        }
+
+        // Open new one and fetch data
+        setExpandedCategoryId(catId);
+        setLoadingMedicines(true);
+        try {
+            // Fetch medicines specifically for this category
+            // We request a slightly larger page size (e.g., 20) to see a good chunk
+            const response = await getMedicines({ 
+                categoryId: catId, 
+                pageSize: 20 
+            });
+            setExpandedMedicines(response.data);
+        } catch (error) {
+            console.error("Failed to load medicines for category");
+        } finally {
+            setLoadingMedicines(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formName.trim()) return;
 
         try {
             if (editingId) {
-
-                // Update mode logic
                 await updateCategory(editingId, { name: formName });
                 alert("Category Updated!");
             } else {
-                // Create mode logic
                 await createCategory({ name: formName });
             }
-            // Reset and Refresh
             setFormName('');
             setEditingId(null);
             fetchCategories();
         } catch (error) {
-            alert("Operation failed. Try again.");
+            alert("Operation failed.");
         }
     };
 
-    const handleEdit = (cat: Category) => {
+    const handleEdit = (e: React.MouseEvent, cat: Category) => {
+        e.stopPropagation(); // Prevent toggling the accordion when clicking Edit
         setFormName(cat.name);
         setEditingId(cat.id);
     };
 
-    const handleCancel = () => {
-        setFormName('');
-        setEditingId(null);
-    };
-
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Delete this category? \nWarning: This might fail if medicines are using it.")) return;
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
+        e.stopPropagation(); // Prevent toggling the accordion when clicking Delete
+        if (!window.confirm("Delete this category?")) return;
         try {
             await deleteCategory(id);
             setCategories(prev => prev.filter(c => c.id !== id));
@@ -80,89 +107,100 @@ const CategoryManagementPage = () => {
             <div className="flex-1 bg-white rounded shadow-sm overflow-hidden flex flex-col">
                 <div className="p-4 border-b bg-gray-50">
                     <h2 className="text-xl font-bold text-gray-800">Categories</h2>
-                    <p className="text-sm text-gray-500">Manage medicine classifications</p>
+                    <p className="text-sm text-gray-500">Click a category to view its medicines</p>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {loading ? (
                         <div className="text-center text-gray-400">Loading...</div>
-                    ) : categories.length === 0 ? (
-                        <div className="text-center text-gray-400 italic">No categories found.</div>
-                    ) : (
-                        categories.map((cat) => (
-                            <div key={cat.id} className="flex justify-between items-center p-3 border rounded hover:bg-blue-50 group">
-                                <div>
+                    ) : categories.map((cat) => (
+                        <div key={cat.id} className="border rounded overflow-hidden">
+                            {/* The Header (Clickable) */}
+                            <div 
+                                onClick={() => toggleCategory(cat.id)}
+                                className={`flex justify-between items-center p-3 cursor-pointer transition-colors
+                                    ${expandedCategoryId === cat.id ? 'bg-blue-50 border-b' : 'hover:bg-gray-50'}
+                                `}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className={`transform transition-transform ${expandedCategoryId === cat.id ? 'rotate-90' : ''}`}>
+                                        ▶
+                                    </span>
                                     <span className="font-medium text-gray-800">{cat.name}</span>
-                                    {/* Show Medicine Count if available */}
                                     {cat.medicineCount !== undefined && (
-                                        <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                                            {cat.medicineCount} items
+                                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                                            {cat.medicineCount}
                                         </span>
                                     )}
                                 </div>
-                                <div className="space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button 
-                                        onClick={() => handleEdit(cat)}
-                                        className="text-blue-600 font-bold hover:underline text-sm"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(cat.id)}
-                                        className="text-red-500 font-bold hover:underline text-sm"
-                                    >
-                                        Delete
-                                    </button>
+                                <div className="space-x-2">
+                                    <button onClick={(e) => handleEdit(e, cat)} className="text-blue-600 text-sm hover:underline">Edit</button>
+                                    <button onClick={(e) => handleDelete(e, cat.id)} className="text-red-500 text-sm hover:underline">Delete</button>
                                 </div>
                             </div>
-                        ))
-                    )}
+
+                            {/* The Drawer (Expanded Content) */}
+                            {expandedCategoryId === cat.id && (
+                                <div className="bg-gray-50 p-3 text-sm animate-fade-in-down">
+                                    {loadingMedicines ? (
+                                        <div className="text-center py-2 text-gray-500">Loading items...</div>
+                                    ) : expandedMedicines.length === 0 ? (
+                                        <div className="text-center py-2 text-gray-400 italic">No medicines in this category.</div>
+                                    ) : (
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="text-gray-500 border-b">
+                                                    <th className="pb-1 font-normal">Medicine Name</th>
+                                                    <th className="pb-1 font-normal text-right">Stock</th>
+                                                    <th className="pb-1 font-normal text-right">Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {expandedMedicines.map(med => (
+                                                    <tr key={med.id} className="border-b last:border-0 border-gray-200">
+                                                        <td className="py-2 text-gray-800">{med.name}</td>
+                                                        <td className={`py-2 text-right font-medium ${med.stockQuantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                                                            {med.stockQuantity}
+                                                        </td>
+                                                        <td className="py-2 text-right text-gray-600">₱{med.price.toFixed(2)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* RIGHT: Action Form */}
+            {/* RIGHT: Action Form (Same as before) */}
             <div className="w-full md:w-80 bg-white rounded shadow-sm p-6 h-fit">
                 <h3 className="text-lg font-bold mb-4 text-gray-800">
                     {editingId ? 'Edit Category' : 'Add New Category'}
                 </h3>
-                
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
                         <input 
-                            type="text" 
-                            required
-                            placeholder="e.g. Antibiotics"
+                            type="text" required
                             className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                             value={formName}
                             onChange={e => setFormName(e.target.value)}
                         />
                     </div>
-
                     <div className="flex gap-2">
-                        <button 
-                            type="submit" 
-                            className={`flex-1 py-2 text-white font-bold rounded ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                        >
+                        <button type="submit" className={`flex-1 py-2 text-white font-bold rounded ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                             {editingId ? 'Update' : 'Create'}
                         </button>
-                        
                         {editingId && (
-                            <button 
-                                type="button" 
-                                onClick={handleCancel}
-                                className="px-4 py-2 bg-gray-200 text-gray-600 font-bold rounded hover:bg-gray-300"
-                            >
+                            <button type="button" onClick={() => { setFormName(''); setEditingId(null); }} className="px-4 py-2 bg-gray-200 text-gray-600 font-bold rounded hover:bg-gray-300">
                                 Cancel
                             </button>
                         )}
                     </div>
                 </form>
-
-                <div className="mt-6 p-4 bg-blue-50 rounded text-sm text-blue-800">
-                    <p className="font-bold">Tip:</p>
-                    <p>Categories with existing medicines cannot be deleted. Remove the medicines first.</p>
-                </div>
             </div>
         </div>
     );

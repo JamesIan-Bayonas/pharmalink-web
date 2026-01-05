@@ -1,76 +1,88 @@
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const DashboardLayout = () => {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
     const location = useLocation();
+    const navigate = useNavigate();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    // Helper to check active link for styling
-    const isActive = (path: string) => location.pathname.startsWith(path) 
-        ? "bg-blue-700 text-white" 
-        : "text-gray-300 hover:bg-blue-800 hover:text-white";
+    const navItems = [
+        { label: 'Overview', path: '/dashboard', roles: ['Admin', 'Pharmacist'] },
+        { label: 'POS Terminal', path: '/sales', roles: ['Admin', 'Pharmacist'] },
+        { label: 'Sales History', path: '/history', roles: ['Admin', 'Pharmacist'] },
+        { label: 'Inventory', path: '/inventory', roles: ['Admin'] },
+        { label: 'Categories', path: '/categories', roles: ['Admin'] },
+        { label: 'User Management', path: '/users', roles: ['Admin'] },
+    ];
+
+    const visibleNavItems = navItems.filter(item => 
+        user && item.roles.includes(user.role)
+    );
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-gray-100 font-sans">
             {/* SIDEBAR */}
-            <aside className="w-64 bg-gray-900 text-white flex flex-col">
-                <div className="p-4 text-2xl font-bold text-center border-b border-gray-700">
-                    PharmaLink
+            <aside className="w-64 bg-gray-800 text-white flex flex-col shadow-lg">
+                <div className="p-6 border-b border-gray-700">
+                    <h2 className="text-2xl font-bold tracking-wide text-blue-400">PharmaLink</h2>
+                    <p className="text-xs text-gray-400 mt-1">Pharmacy Management</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2">
-                    <Link to="/dashboard" className={`block px-4 py-2 rounded text-center ${isActive('/dashboard')}`}>
-                        Dashboard
-                    </Link>
-
-                    {/* SHARED LINKS (Admin & Pharmacist) */}
-                    <Link to="/sales" className={`block px-4 py-2 rounded text-center ${isActive('/sales')}`}>
-                        POS Terminal
-                    </Link>
-
-                    {/* ADMIN ONLY LINKS */}
-                    {user?.role === 'Admin' && (
-                        <>
-                            <Link to="/inventory" className={`block px-4 py-2 rounded text-center ${isActive('/inventory')}`}>
-                                Inventory Management
+                    {visibleNavItems.map((item) => {
+                        const isActive = location.pathname === item.path;
+                        return (
+                            <Link 
+                                key={item.path}
+                                to={item.path}
+                                className={`block px-4 py-3 rounded transition-colors duration-200 
+                                    ${isActive 
+                                        ? 'bg-blue-600 text-white font-bold shadow-md' 
+                                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                    }`}
+                            >
+                                {item.label}
                             </Link>
-                            <Link to="/history" className={`block px-4 py-2 rounded text-center ${isActive('/history')}`}>
-                                Sales History
-                            </Link>
-                            <Link to="/users" className={`block px-4 py-2 rounded text-center ${isActive('/users')}`}>
-                                User Management
-                            </Link>
-                            <Link to="/categories" className={`block px-4 py-2 rounded text-center ${isActive('/categories')}`}>
-                                Category Management
-                            </Link>
-                        </>
-                    )}
+                        );
+                    })}
                 </nav>
 
                 <div className="p-4 border-t border-gray-700">
-                    <div className="mb-2 text-sm text-gray-400">
-                        Logged in as: <span className="text-white font-bold">{user?.username}</span>
-                        <br />
-                        <span className="text-xs uppercase tracking-wider">{user?.role}</span>
+                    <div className="mb-4 px-4">
+                        <p className="text-sm font-medium text-white">{user?.username || 'User'}</p>
+                        <p className="text-xs text-gray-400">{user?.role || 'Guest'}</p>
                     </div>
                     <button 
                         onClick={handleLogout}
-                        className="w-full px-4 py-2 text-sm font-bold text-white bg-red-600 rounded hover:bg-red-700"
+                        className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded transition-colors"
                     >
-                        Logout
+                        Sign Out
                     </button>
                 </div>
             </aside>
 
             {/* MAIN CONTENT AREA */}
-            <main className="flex-1 overflow-auto p-8">
-                <Outlet /> 
+            <main className="flex-1 flex flex-col overflow-hidden">
+                {/* Top Header (Optional, good for mobile or extra info) */}
+                <header className="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+                    <h1 className="text-xl font-bold text-gray-700">
+                        {navItems.find(i => i.path === location.pathname)?.label || 'Dashboard'}
+                    </h1>
+                    {/* Add a Date/Time display here later if you want */}
+                    <div className="text-sm text-gray-500">
+                        {new Date().toLocaleDateString()}
+                    </div>
+                </header>
+
+                {/* Page Content Scroller */}
+                <div className="flex-1 overflow-auto p-6">
+                    <Outlet />
+                </div>
             </main>
         </div>
     );
