@@ -2,22 +2,21 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { jwtDecode } from "jwt-decode"; 
 import api from '../services/api';
 
-// Define the Shape of your User Object
 interface User {
     id: number;
     username: string;
-    role: "Admin" | "Pharmacist"; // Strict Union Type
+    role: "Admin" | "Pharmacist"; 
 }
 
-// Define the Shape of the JWT Payload
 interface CustomJwtPayload {
-    uid: string;       // Your custom claim
+    uid: string; // Your custom claim
     role: "Admin" | "Pharmacist"; 
-    sub: string;       // Standard username claim
+    sub?: string;
+    unique_name?: string;
+    name?: string;
     exp: number;
 }
 
-// Define the Context State
 interface AuthContextType {
     user: User | null;
     login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
@@ -37,9 +36,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (token) {
             try {
                 const decoded = jwtDecode<CustomJwtPayload>(token);
+                
+                // Implement robust check for username (sub OR unique_name OR name)
+                const extractedUsername = decoded.sub || decoded.unique_name || decoded.name || "Unknown";
+
                 setUser({
                     id: parseInt(decoded.uid), // Convert string claim to number
-                    username: decoded.sub,
+                    username: extractedUsername,
                     role: decoded.role
                 });
             } catch (e) {
@@ -57,9 +60,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('token', token);
 
             const decoded = jwtDecode<CustomJwtPayload>(token);
+            
+            // Implement robust username extraction
+            const extractedUsername = decoded.sub || decoded.unique_name || decoded.name || "Unknown";
+
             setUser({
                 id: parseInt(decoded.uid),
-                username: decoded.sub,
+                username: extractedUsername,
                 role: decoded.role
             });
 
