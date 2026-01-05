@@ -18,7 +18,7 @@ const POSTerminalPage = () => {
     // State for the Receipt
     const [lastSale, setLastSale] = useState<ReceiptData | null>(null);
 
-    // 1. Fetch Products
+    // Fetch Products
     useEffect(() => {
         const loadProducts = async () => {
             setLoading(true);
@@ -33,7 +33,15 @@ const POSTerminalPage = () => {
                 setLoading(false);
             }
         };
-        loadProducts();
+
+        // Create a timer that waits 500ms before running loadProducts
+        const debounceTimer = setTimeout(() => {
+            loadProducts();
+        }, 500);
+
+        // Cleanup: If the user types again (searchTerm changes) clears the timer
+        return () => clearTimeout(debounceTimer);
+        
     }, [searchTerm]);
 
     // Auto print logic
@@ -75,7 +83,7 @@ const POSTerminalPage = () => {
 
     const grandTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
 
-    // 3. CHECKOUT
+    // CHECKOUT
     const handleCheckout = async () => {
         if (cart.length === 0) return;
         if (!window.confirm(`Process sale for ₱${grandTotal.toFixed(2)}?`)) return;
@@ -86,26 +94,32 @@ const POSTerminalPage = () => {
             }));
 
             const result = await createSale({ items: salesItems });
+
+            console.log("API RESULT:", result); 
             
             // Format Receipt Data
             const receiptData: ReceiptData = {
-                id: result.id,
-                date: result.transactionDate,
-                total: result.totalAmount,
-                cashierName: user?.username,
+                id: (result as any).saleId, 
+                date: new Date().toISOString(),
+                total: grandTotal, 
+                cashierName: user?.username || 'Staff',
+
                 items: cart.map(c => ({
-                    name: c.name, qty: c.cartQuantity, price: c.price, total: c.price * c.cartQuantity
+                    name: c.name, 
+                    qty: c.cartQuantity, 
+                    price: c.price, 
+                    total: c.price * c.cartQuantity 
                 }))
             };
 
-            // Set Receipt Data to state
             setLastSale(receiptData); 
             
-            // Clear Cart
+            alert(`Sale Successful! ID: ${receiptData.id}`); 
             setCart([]); 
             setSearchTerm(''); 
             
         } catch (error: any) {
+            console.error("Checkout Error:", error);
             alert("Checkout Failed: " + (error.response?.data?.message || "Unknown error"));
         }
     };
@@ -179,8 +193,7 @@ const POSTerminalPage = () => {
                     </button>
                 </div>
             </div>
-
-            {/* Ghost Receipt Component */}
+            {/*Receipt components*/}
             <PrintableReceipt data={lastSale} />
         </div>
     );

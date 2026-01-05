@@ -1,6 +1,3 @@
-
-// We need a specific type for the receipt data because the API response 
-// doesn't have the item names (only IDs), but our Cart has the names.
 export interface ReceiptData {
     id: number;
     date: string;
@@ -44,11 +41,14 @@ const PrintableReceipt = ({ data }: PrintableReceiptProps) => {
                     </tr>
                 </thead>
                 <tbody>
+                    {/* SAFEGUARD ADDED HERE: (item.total || 0) */}
                     {data.items.map((item, index) => (
                         <tr key={index}>
                             <td className="py-1">{item.name}</td>
                             <td className="py-1 text-right">{item.qty}</td>
-                            <td className="py-1 text-right">{item.total.toFixed(2)}</td>
+                            <td className="py-1 text-right">
+                                {(item.total || 0).toFixed(2)} 
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -57,10 +57,11 @@ const PrintableReceipt = ({ data }: PrintableReceiptProps) => {
             <div className="border-t border-black pt-2 mb-4">
                 <div className="flex justify-between font-bold text-lg">
                     <span>TOTAL</span>
-                    <span>P {data.total.toFixed(2)}</span>
+                    {/* SAFEGUARD ADDED HERE: (data.total || 0) */}
+                    <span>P {(data.total || 0).toFixed(2)}</span>
                 </div>
                 <div className="text-xs text-center mt-4">
-                    -- THIS IS YOUR OFFICIAL RECEIPT --
+                    -- THIS IS YOURx OFFICIAL RECEIPT --
                     <br />
                     Thank you for your purchase!
                 </div>
