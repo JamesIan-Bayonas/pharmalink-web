@@ -1,6 +1,6 @@
 import api from './api';
 
-// Matches PharmaLink.API/DTOs/Users/UserResponseDto.cs
+// PharmaLink.API/DTOs/Users/UserResponseDto.cs
 export interface UserResponse {
     id: number;
     email: string;
@@ -8,11 +8,17 @@ export interface UserResponse {
     role: string;
 }
 
-// Matches PharmaLink.API/DTOs/Auth/UserRegisterDto.cs
+// PharmaLink.API/DTOs/Auth/UserRegisterDto.cs
 export interface CreateUserRequest {
     userName: string;
     password: string;
     role: string; // 'Admin' or 'Pharmacist'
+}
+
+export interface UpdateUserRequest {
+    userName: string;
+    password?: string; 
+    role: string;
 }
 
 export const getAllUsers = async (): Promise<UserResponse[]> => {
@@ -27,4 +33,8 @@ export const deleteUser = async (id: number): Promise<void> => {
 // We use the Auth registration endpoint, but call it from inside the app
 export const registerUser = async (data: CreateUserRequest): Promise<void> => {
     await api.post('/Auth/register', data);
+};
+
+export const updateUser = async (id: number, data: UpdateUserRequest): Promise<void> => {
+    await api.put(`/Users/${id}`, data);
 };
