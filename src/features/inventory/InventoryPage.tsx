@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom'; // Import this
+import { useSearchParams } from 'react-router-dom'; 
 import { getMedicines, deleteMedicine, type Medicine, type PaginationMeta } from '../../services/medicineService';
-import { getAllCategories } from '../../services/categoryService';
+import { getAllCategories, type Category } from '../../services/categoryService'; // Import Category Type
 import { useAuth } from '../../context/AuthContext';
 import AddMedicineModal from './AddMedicineModal';
 import RestockModal from './RestockModal';
 
 const InventoryPage = () => {
     const { user } = useAuth();
-    const [searchParams, setSearchParams] = useSearchParams(); // URL Params
+    const [searchParams, setSearchParams] = useSearchParams(); 
     
     // Data State
     const [medicines, setMedicines] = useState<Medicine[]>([]);
-    const [categories, setCategories] = useState<Record<number, string>>({});
+    const [categories, setCategories] = useState<Category[]>([]); // Store full category objects
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     
     // UI State
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
+    
+    // --- NEW: Category Filter State ---
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
 
-    // Read Filter from URL (default to empty)
+    // Read Filter from URL 
     const activeFilter = searchParams.get('filter') || '';
 
     // Modal State
@@ -36,7 +39,8 @@ const InventoryPage = () => {
                 pageNumber: page, 
                 pageSize: 10, 
                 searchTerm: searchTerm,
-                filter: activeFilter // Pass filter to API
+                filter: activeFilter,
+                categoryId: selectedCategoryId || undefined 
             });
             setMedicines(response.data);
             setMeta(response.meta);
@@ -52,9 +56,7 @@ const InventoryPage = () => {
         const fetchCategories = async () => {
             try {
                 const data = await getAllCategories();
-                const catMap: Record<number, string> = {};
-                data.forEach(c => catMap[c.id] = c.name);
-                setCategories(catMap);
+                setCategories(data); // Store array for dropdown
             } catch (error) {
                 console.error("Failed to load categories", error);
             }
@@ -65,12 +67,18 @@ const InventoryPage = () => {
     // Refetch when dependencies change
     useEffect(() => {
         fetchInventory();
-    }, [page, searchTerm, activeFilter]);
+    }, [page, searchTerm, activeFilter, selectedCategoryId]); // Add selectedCategoryId to dependency
+
+    // Helper to get Category Name from ID
+    const getCategoryName = (id: number) => {
+        const cat = categories.find(c => c.id === id);
+        return cat ? cat.name : 'Unknown';
+    };
 
     // Handlers
     const handleFilterChange = (newFilter: string) => {
         setPage(1);
-        setSearchParams(newFilter ? { filter: newFilter } : {}); // Update URL
+        setSearchParams(newFilter ? { filter: newFilter } : {}); 
     };
 
     const handleDelete = async (id: number) => {
@@ -83,10 +91,9 @@ const InventoryPage = () => {
         }
     };
 
-    // Helper: Row Color Logic
+    // Row Color Logic
     const getRowColor = (item: Medicine) => {
         const isLow = item.stockQuantity <= 10;
-        // Check if expiry is within 90 days
         const daysUntilExpiry = Math.ceil((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
         const isExpiring = daysUntilExpiry <= 90;
 
@@ -103,8 +110,8 @@ const InventoryPage = () => {
                     <p className="text-sm text-gray-500">Manage stock and pricing</p>
                 </div>
                 
-                {/* --- NEW: QUICK FILTERS --- */}
-                <div className="flex space-x-2">
+                {/* Status Filters */}
+                <div className="flex space-x-2 overflow-x-auto pb-2 md:pb-0">
                     <button 
                         onClick={() => handleFilterChange('')}
                         className={`px-3 py-1 text-sm rounded-full border ${activeFilter === '' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300'}`}
@@ -125,7 +132,24 @@ const InventoryPage = () => {
                     </button>
                 </div>
 
-                <div className="flex space-x-2 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+                    
+                    {/* Category Dropdown  */}
+                    <select
+                        value={selectedCategoryId}
+                        onChange={(e) => { 
+                            setSelectedCategoryId(e.target.value ? Number(e.target.value) : ''); 
+                            setPage(1); 
+                        }}
+                        className="border p-2 rounded outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                    >
+                        <option value="">All Categories</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </select>
+
+                    {/* Search Bar */}
                     <input 
                         type="text" 
                         placeholder="Search..." 
@@ -133,6 +157,7 @@ const InventoryPage = () => {
                         onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                         className="border p-2 rounded flex-1 md:w-48 outline-none focus:ring-1 focus:ring-blue-500"
                     />
+                    
                     {user?.role === 'Admin' && (
                         <button 
                             onClick={() => { setSelectedMedicine(null); setIsAddModalOpen(true); }}
@@ -168,7 +193,7 @@ const InventoryPage = () => {
                                     <td className="py-3 px-6 font-medium text-gray-900">{item.name}</td>
                                     <td className="py-3 px-6">
                                         <span className="bg-blue-100 text-blue-800 py-1 px-3 rounded-full text-xs">
-                                            {categories[item.categoryId] || 'Unknown'}
+                                            {getCategoryName(item.categoryId)}
                                         </span>
                                     </td>
                                     <td className="py-3 px-6 text-center">
@@ -211,7 +236,7 @@ const InventoryPage = () => {
                 </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             {meta && (
                 <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm">
                     <span className="text-gray-600 text-sm">
