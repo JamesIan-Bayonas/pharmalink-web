@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getDashboardStats, type DashboardStats } from '../../services/dashboardService';
-import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const DashboardPage = () => {
-    const { user } = useAuth();
     const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string>('');
-    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -16,94 +14,153 @@ const DashboardPage = () => {
                 const data = await getDashboardStats();
                 setStats(data);
             } catch (err) {
-                console.error("Failed to load dashboard stats", err);
+                console.error("Failed to load dashboard:", err);
                 setError('Failed to load dashboard data.');
             } finally {
                 setLoading(false);
             }
         };
-
         fetchStats();
     }, []);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500">Loading Analytics...</div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+    if (!stats) return null;
 
     return (
         <div className="space-y-6">
-            <header>
-                <h1 className="text-3xl font-bold text-gray-800">Overview</h1>
-                <p className="text-gray-600">Welcome back, {user?.username}!</p>
+            <header className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Pharmacy Overview</h1>
+                    <p className="text-gray-500 text-sm">Real-time inventory and sales metrics</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-600">{new Date().toLocaleDateString()}</p>
+                </div>
             </header>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* TOP ROW: STAT CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                {/* Card 1: Revenue (Green) */}
-                <div className="p-6 bg-white border-l-4 border-green-500 rounded-lg shadow-sm">
-                    <div className="text-sm font-medium text-gray-500 uppercase">Today's Revenue</div>
-                    <div className="mt-2 text-3xl font-bold text-gray-900">
-                        ₱{stats?.totalRevenueToday.toLocaleString()}
+                {/* REVENUE */}
+                <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Today's Revenue</p>
+                            <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                                ₱{stats.totalRevenueToday.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </h3>
+                        </div>
+                        <span className="p-2 bg-green-100 text-green-600 rounded-lg">💰</span>
                     </div>
                 </div>
 
-                {/* Card 2: Sales Count (Blue) */}
-                <div className="p-6 bg-white border-l-4 border-blue-500 rounded-lg shadow-sm">
-                    <div className="text-sm font-medium text-gray-500 uppercase">Sales Processed</div>
-                    <div className="mt-2 text-3xl font-bold text-gray-900">
-                        {stats?.totalSalesToday}
+                {/* TRANSACTIONS */}
+                <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Transactions</p>
+                            <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                                {stats.totalSalesToday}
+                            </h3>
+                        </div>
+                        <span className="p-2 bg-blue-100 text-blue-600 rounded-lg">🧾</span>
                     </div>
                 </div>
 
-                {/* Card 3: Low Stock (Red - Critical) */}
-                <div className="p-6 bg-white border-l-4 border-red-500 rounded-lg shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-gray-500 uppercase">Low Stock Alerts</div>
-                        <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">Action Needed</span>
+                {/* LOW STOCK */}
+                <Link to="/inventory?filter=low" className="block transform transition hover:scale-105">
+                    <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500 cursor-pointer">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Low Stock</p>
+                                <h3 className="text-2xl font-bold text-red-600 mt-1">
+                                    {stats.lowStockItems}
+                                </h3>
+                                <p className="text-xs text-red-400 mt-1">Items below threshold</p>
+                            </div>
+                            <span className="p-2 bg-red-100 text-red-600 rounded-lg">⚠️</span>
+                        </div>
                     </div>
-                    <div className="mt-2 text-3xl font-bold text-red-600">
-                        {stats?.lowStockItems}
-                    </div>
-                    <p className="mt-1 text-xs text-gray-400">Items with &lt; 10 units</p>
-                </div>
+                </Link>
 
-                {/* Card 4: Expiring Soon (Yellow/Orange) */}
-                <div className="p-6 bg-white border-l-4 border-orange-400 rounded-lg shadow-sm">
-                    <div className="text-sm font-medium text-gray-500 uppercase">Expiring Soon</div>
-                    <div className="mt-2 text-3xl font-bold text-gray-900">
-                        {stats?.expiringSoonItems}
+                {/* EXPIRING SOON */}
+                <Link to="/inventory?filter=expiring" className="block transform transition hover:scale-105">
+                    <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-orange-400 uppercase tracking-wider">Expiring (90 Days)</p>
+                                <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                                    {stats.expiringSoonItems}
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1">Out of {stats.totalMedicines} total medicines</p>
+                            </div>
+                            <span className="p-2 bg-orange-100 text-orange-600 rounded-lg">📅</span>
+                        </div>
                     </div>
-                    <p className="mt-1 text-xs text-gray-400">Items expiring in &lt; 3 months</p>
-                </div>
+                </Link>
             </div>
 
-            {/* Quick Actions / Total Inventory Overview */}
-            <div className="p-6 mt-6 bg-white rounded-lg shadow-sm">
-                <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Inventory Status</h2>
-                <div className="flex items-center space-x-4">
-                    <div className="flex-1">
-                        <p className="text-gray-500">Total Unique Medicines</p>
-                        <p className="text-2xl font-bold">{stats?.totalMedicines}</p>
-                    </div>
-                    {/* Role Based Action Button */}
-                    {user?.role === 'Admin' ? (
-                         <button 
-                         onClick={() => navigate('/inventory')}
-                         className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded hover:bg-blue-700">
-                            Manage Inventory
-                         </button>
+            {/* MIDDLE ROW: CHART SECTION */}
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Weekly Sales Trend</h3>
+                <div className="h-64 w-full">
+                    {stats.weeklySales && stats.weeklySales.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={stats.weeklySales}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis 
+                                    dataKey="dateLabel" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#6B7280', fontSize: 12 }} 
+                                    dy={10}
+                                />
+                                <YAxis 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#6B7280', fontSize: 12 }} 
+                                    tickFormatter={(value) => `₱${value}`}
+                                />
+                                <Tooltip 
+                                    cursor={{ fill: '#F3F4F6' }}
+                                    formatter={(value: any) => [`₱${value.toLocaleString()}`, 'Revenue']}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Bar 
+                                    dataKey="totalAmount"
+                                    fill="#3B82F6" 
+                                    radius={[4, 4, 0, 0]} 
+                                    barSize={40}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
                     ) : (
-                        <button 
-                            onClick={() => navigate('/sales')} 
-                            className="px-4  py-2 text-sm font-bold text-white bg-green-600 rounded hover:bg-green-700"
-                        >
-                            New Transaction
-                        </button>
+                        <div className="h-full flex items-center justify-center text-gray-400">
+                            No sales data for the last 7 days.
+                        </div>
                     )}
                 </div>
             </div>
 
+            {/* BOTTOM ROW: QUICK ACTIONS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-6 flex flex-col justify-center items-start">
+                    <h3 className="font-bold text-blue-800 text-lg">New Transaction</h3>
+                    <p className="text-sm text-blue-600 mb-4">Process sales and print receipts.</p>
+                    <Link to="/sales" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition">
+                        Go to POS Terminal
+                    </Link>
+                </div>
 
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 flex flex-col justify-center items-start">
+                    <h3 className="font-bold text-gray-800 text-lg">Manage Inventory</h3>
+                    <p className="text-sm text-gray-600 mb-4">Add stocks or check expiring items.</p>
+                    <Link to="/inventory" className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-6 py-2 rounded font-medium transition">
+                        View Inventory
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 };
