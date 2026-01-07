@@ -37,6 +37,8 @@ export interface SaleResponse {
 export interface SalesParams {
     pageNumber?: number;
     pageSize?: number;
+    searchTerm?: string;
+    orderBy?: string;
     startDate?: string; // ISO Date String (YYYY-MM-DD)
     endDate?: string;   // ISO Date String (YYYY-MM-DD)
 }

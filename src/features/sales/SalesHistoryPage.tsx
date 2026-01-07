@@ -9,22 +9,24 @@ const SalesHistoryPage = () => {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     
-    // --- NEW: Date Filter State ---
+    // Date Filters
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    // Export State
+    const [isExporting, setIsExporting] = useState(false);
 
     const [selectedSale, setSelectedSale] = useState<SaleResponse | null>(null);
     const [printData, setPrintData] = useState<ReceiptData | null>(null);
 
-    // Fetch Function
+    // Fetch Function (Standard Pagination)
     const fetchSales = async () => {
         setLoading(true);
         try {
-            // --- UPDATED: Pass dates to the service ---
             const response = await getSales({ 
                 pageNumber: page, 
                 pageSize: 10,
-                startDate: startDate || undefined, // Send undefined if empty
+                startDate: startDate || undefined,
                 endDate: endDate || undefined 
             });
             setSales(response.data);
@@ -36,10 +38,73 @@ const SalesHistoryPage = () => {
         }
     };
 
-    // --- UPDATED: Trigger fetch when Page OR Dates change ---
     useEffect(() => {
         fetchSales();
     }, [page, startDate, endDate]);
+
+    // --- NEW: EXPORT LOGIC ---
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            // 1. Fetch ALL matching records (Requesting 10,000 items to bypass pagination)
+            const response = await getSales({ 
+                pageNumber: 1, 
+                pageSize: 10000, 
+                startDate: startDate || undefined,
+                endDate: endDate || undefined 
+            });
+
+            const allSales = response.data;
+
+            if (allSales.length === 0) {
+                alert("No records to export.");
+                return;
+            }
+
+            // 2. Define CSV Headers
+            const headers = ["Receipt ID", "Date", "Time", "Items Count", "Total Amount", "Cashier ID"];
+
+            // 3. Convert Data to CSV String
+            const csvRows = allSales.map(sale => {
+                const dateObj = new Date(sale.transactionDate);
+                const dateStr = dateObj.toLocaleDateString();
+                const timeStr = dateObj.toLocaleTimeString();
+
+                return [
+                    sale.id,
+                    `"${dateStr}"`, // Quote strings to handle commas safely
+                    `"${timeStr}"`,
+                    sale.items.length,
+                    sale.totalAmount.toFixed(2),
+                    sale.userId
+                ].join(",");
+            });
+
+            // Combine Header + Rows
+            const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+            // 4. Trigger Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            
+            // File Name: Sales_Report_2023-10-25.csv
+            const fileName = `Sales_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            link.setAttribute("download", fileName);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (error) {
+            console.error("Export failed", error);
+            alert("Failed to export data.");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+    // --- END EXPORT LOGIC ---
 
     // Handle Printing
     useEffect(() => {
@@ -75,43 +140,54 @@ const SalesHistoryPage = () => {
                     <p className="text-sm text-gray-500">Audit logs and past transactions</p>
                 </div>
 
-                {/* --- NEW: Date Filter Controls --- */}
-                <div className="flex items-center space-x-3 bg-gray-50 p-2 rounded border">
-                    <div className="flex flex-col">
-                        <label className="text-[10px] uppercase font-bold text-gray-500">From</label>
-                        <input 
-                            type="date" 
-                            className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                            value={startDate}
-                            onChange={(e) => {
-                                setStartDate(e.target.value);
-                                setPage(1); // Reset to page 1 when filter changes
-                            }}
-                        />
-                    </div>
-                    <div className="flex flex-col">
-                        <label className="text-[10px] uppercase font-bold text-gray-500">To</label>
-                        <input 
-                            type="date" 
-                            className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                            value={endDate}
-                            onChange={(e) => {
-                                setEndDate(e.target.value);
-                                setPage(1); // Reset to page 1 when filter changes
-                            }}
-                        />
+                {/* Filter & Export Bar */}
+                <div className="flex flex-wrap items-center gap-3">
+                    
+                    {/* Date Inputs */}
+                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded border">
+                        <div className="flex flex-col">
+                            <label className="text-[10px] uppercase font-bold text-gray-500">From</label>
+                            <input 
+                                type="date" 
+                                className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                                value={startDate}
+                                onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label className="text-[10px] uppercase font-bold text-gray-500">To</label>
+                            <input 
+                                type="date" 
+                                className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                                value={endDate}
+                                onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                            />
+                        </div>
+                        {(startDate || endDate) && (
+                            <button 
+                                onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
+                                className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
+                            >
+                                ✕ Clear
+                            </button>
+                        )}
                     </div>
 
-                    {/* Clear Button (Only shows if filters are active) */}
-                    {(startDate || endDate) && (
-                        <button 
-                            onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
-                            className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
-                            title="Clear Filters"
-                        >
-                            ✕ Clear
-                        </button>
-                    )}
+                    {/* --- NEW EXPORT BUTTON --- */}
+                    <button 
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold shadow-sm disabled:opacity-50 transition"
+                    >
+                        <span>{isExporting ? 'Generating...' : 'Export Excel'}</span>
+                        {/* Simple Download Icon */}
+                        {!isExporting && (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        )}
+                    </button>
+
                 </div>
             </header>
 
