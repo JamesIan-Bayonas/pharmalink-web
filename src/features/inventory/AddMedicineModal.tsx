@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { createMedicine, type CreateMedicineRequest } from '../../services/medicineService';
+import { createMedicine, updateMedicine, type CreateMedicineRequest, type Medicine } from '../../services/medicineService';
 import { getAllCategories, type Category } from '../../services/categoryService';
 
 interface AddMedicineModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void; // Trigger to refresh the parent table
+    medicineToEdit?: Medicine | null;
 }
 
-const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps) => {
+const AddMedicineModal = ({ isOpen, onClose, onSuccess, medicineToEdit }: AddMedicineModalProps) => {
     // Dropdown Data
     const [categories, setCategories] = useState<Category[]>([]);
     
@@ -32,9 +33,26 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
                 try {
                     const data = await getAllCategories();
                     setCategories(data);
-                    // Default to first category if available
-                    if (data.length > 0) {
-                        setFormData(prev => ({ ...prev, categoryId: data[0].id }));
+                    
+                    if (medicineToEdit) {
+                        // Pre-fill form if editing
+                        setFormData({
+                            name: medicineToEdit.name,
+                            categoryId: medicineToEdit.categoryId,
+                            price: medicineToEdit.price,
+                            stockQuantity: medicineToEdit.stockQuantity,
+                            expiryDate: medicineToEdit.expiryDate.split('T')[0],
+                            description: medicineToEdit.description || ''
+                        });
+                    } else {
+                        setFormData({
+                            name: '',
+                            categoryId: data.length > 0 ? data[0].id : 0,
+                            price: 0,
+                            stockQuantity: 0,
+                            expiryDate: '',
+                            description: ''
+                        });
                     }
                 } catch (err) {
                     console.error("Failed to load categories");
@@ -42,7 +60,7 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
             };
             loadCategories();
         }
-    }, [isOpen]);
+    }, [isOpen, medicineToEdit]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,7 +68,12 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
         setError('');
 
         try {
-            await createMedicine(formData);
+            if (medicineToEdit) {
+                 await updateMedicine(medicineToEdit.id, formData);
+            } else {
+                 await createMedicine(formData);
+            }
+            
             onSuccess(); // Tell parent to refresh
             onClose();   // Close modal
             // Reset Form
@@ -59,7 +82,7 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
                 stockQuantity: 0, expiryDate: '', description: ''
             });
         } catch (err: any) {
-            setError(err.response?.data?.message || "Failed to create medicine");
+            setError(err.response?.data?.message || "Failed to save medicine");
         } finally {
             setLoading(false);
         }
@@ -70,7 +93,9 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-                <h2 className="text-xl font-bold mb-4">Add New Medicine</h2>
+                <h2 className="text-xl font-bold mb-4">
+                    {medicineToEdit ? 'Edit Medicine' : 'Add New Medicine'}
+                </h2>
                 
                 {error && <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">{error}</div>}
 
@@ -152,7 +177,7 @@ const AddMedicineModal = ({ isOpen, onClose, onSuccess }: AddMedicineModalProps)
                             disabled={loading}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                         >
-                            {loading ? 'Saving...' : 'Save Medicine'}
+                            {loading ? 'Saving...' : (medicineToEdit ? 'Update Medicine' : 'Save Medicine')}
                         </button>
                     </div>
                 </form>

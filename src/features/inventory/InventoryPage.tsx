@@ -11,6 +11,7 @@ const InventoryPage = () => {
     const [medicines, setMedicines] = useState<Medicine[]>([]);
     const [categories, setCategories] = useState<Record<number, string>>({});
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
+    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
     
     // UI State
     const [loading, setLoading] = useState(true);
@@ -19,7 +20,6 @@ const InventoryPage = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Helper Function: Fetch Inventory
-    // (Moved OUTSIDE useEffect so the Modal can use it to refresh data)
     const fetchInventory = async () => {
         setLoading(true);
         try {
@@ -70,6 +70,16 @@ const InventoryPage = () => {
         }
     };
 
+    const handleEdit = (medicine: Medicine) => {
+        setSelectedMedicine(medicine);
+        setIsAddModalOpen(true);
+    };
+
+    const handleAdd = () => {
+        setSelectedMedicine(null);
+        setIsAddModalOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             {/* Header / Controls */}
@@ -85,7 +95,7 @@ const InventoryPage = () => {
                         className="border p-2 rounded w-full md:w-64"
                     />
                     {user?.role === 'Admin' && (
-                        <button onClick={() => setIsAddModalOpen(true)}
+                        <button onClick={handleAdd}
                         className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
                             + Add Medicine
                         </button>
@@ -131,12 +141,20 @@ const InventoryPage = () => {
                                     </td>
                                     <td className="py-3 px-6 text-center">
                                         {user?.role === 'Admin' && (
-                                            <button 
-                                                onClick={() => handleDelete(item.id)}
-                                                className="text-red-500 hover:text-red-700 font-bold"
-                                            >
-                                                Delete
-                                            </button>
+                                            <div className="flex justify-center space-x-4">
+                                                <button 
+                                                    onClick={() => handleEdit(item)}
+                                                    className="text-indigo-600 hover:text-indigo-900 font-bold"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="text-red-500 hover:text-red-700 font-bold"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         )}
                                     </td>
                                 </tr>
@@ -178,7 +196,8 @@ const InventoryPage = () => {
                 onSuccess={() => {
                     setIsAddModalOpen(false); 
                     fetchInventory(); // Calls the function we moved up
-                }} 
+                }}
+                medicineToEdit={selectedMedicine}
             />
         </div>
     );
