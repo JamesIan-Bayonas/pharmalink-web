@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getAllUsers, deleteUser, registerUser, type UserResponse } from '../../services/userService';
+import { getAllUsers, deleteUser, type UserResponse } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
+import UserModal from './UserModal'; // Import the new component
 
 const UserManagementPage = () => {
     const { user: currentUser } = useAuth();
@@ -8,18 +9,14 @@ const UserManagementPage = () => {
     // State
     const [users, setUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // Form State
-    const [formData, setFormData] = useState({
-        userName: '',
-        password: '',
-        role: 'Pharmacist' // Default role
-    });
+    const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
 
     const fetchUsers = async () => {
         try {
-    const data  = await getAllUsers();
+            const data  = await getAllUsers();
             setUsers(data);
         } catch (error) {
             console.error("Failed to load users", error);
@@ -42,17 +39,16 @@ const UserManagementPage = () => {
         }
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await registerUser(formData);
-            alert("User created successfully!");
-            setIsModalOpen(false);
-            setFormData({ userName: '', password: '', role: 'Pharmacist' }); // Reset
-            fetchUsers(); // Refresh list
-        } catch (error: any) {
-            alert("Failed to create user: " + (error.response?.data?.message || "Unknown error"));
-        }
+    // Open Modal in Edit Mode
+    const handleEdit = (user: UserResponse) => {
+        setSelectedUser(user);
+        setIsModalOpen(true);
+    };
+
+    // Open Modal in Create Mode
+    const handleCreate = () => {
+        setSelectedUser(null);
+        setIsModalOpen(true);
     };
 
     return (
@@ -63,7 +59,7 @@ const UserManagementPage = () => {
                     <p className="text-sm text-gray-500">Manage staff access and roles</p>
                 </div>
                 <button 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={handleCreate}
                     className="bg-purple-600 text-white px-4 py-2 rounded font-bold hover:bg-purple-700"
                 >
                     + Add New User
@@ -77,10 +73,8 @@ const UserManagementPage = () => {
                         <tr>
                             <th className="py-3 px-6">Id</th>
                             <th className="py-3 px-6">Username</th>
-                            {/* <th className="py-3 px-6">Email</th> */}
                             <th className="py-3 px-6">Role</th>
-                            {/* <th className="py-3 px-6 text-center">Actions</th> */}
-                            <th className="py-3 px-6 text-center">Delete</th>
+                            <th className="py-3 px-6 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 text-sm">
@@ -90,9 +84,7 @@ const UserManagementPage = () => {
                             <tr key={u.id} className="border-b hover:bg-gray-50">
                                 <td className="py-3 px-6">{u.id}</td>
                                 <td className="py-3 px-6  text-gray-900">
-                                    {/* FIX 1: Use u.userName instead of u.username */}
                                     {u.userName}
-                                    {/* FIX 2: Check matching property (Assuming AuthContext uses 'username', keep it. If it uses 'userName', update it) */}
                                     {u.userName === currentUser?.username && <span className="ml-2 text-xs text-blue-500">(You)</span>}
                                 </td>
                                 <td className="py-3 px-6">
@@ -101,15 +93,24 @@ const UserManagementPage = () => {
                                     </span>
                                 </td>
                                 <td className="py-3 px-6 text-center">
-                                    {/* FIX 3: Update the check here too */}
-                                    {u.userName !== currentUser?.username && (
+                                    <div className="flex justify-center space-x-4">
                                         <button 
-                                            onClick={() => handleDelete(u.id)}
-                                            className="text-red-500 hover:text-red-700 font-bold"
+                                            onClick={() => handleEdit(u)}
+                                            className="text-indigo-600 hover:text-indigo-900 font-bold"
                                         >
-                                            Delete
+                                            Edit
                                         </button>
-                                    )}
+                                        
+                                        {/* Prevent deleting yourself */}
+                                        {u.userName !== currentUser?.username && (
+                                            <button 
+                                                onClick={() => handleDelete(u.id)}
+                                                className="text-red-500 hover:text-red-700 font-bold"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -117,55 +118,16 @@ const UserManagementPage = () => {
                 </table>
             </div>
 
-            {/* ADD USER MODAL */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
-                        <h2 className="text-xl font-bold mb-4">Register New Employee</h2>
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium">Username</label>
-                                <input 
-                                    required type="text" className="w-full border p-2 rounded"
-                                    value={formData.userName}
-                                    onChange={e => setFormData({...formData, userName: e.target.value})}
-                                />
-                            </div>
-                            {/* <div>
-                                <label className="block text-sm font-medium">Email</label>
-                                <input 
-                                    required type="email" className="w-full border p-2 rounded"
-                                    value={formData.email}
-                                    onChange={e => setFormData({...formData, email: e.target.value})}
-                                />
-                            </div> */}
-                            <div>
-                                <label className="block text-sm font-medium">Password</label>
-                                <input 
-                                    required type="password" className="w-full border p-2 rounded"
-                                    value={formData.password}
-                                    onChange={e => setFormData({...formData, password: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium">Role</label>
-                                <select 
-                                    className="w-full border p-2 rounded"
-                                    value={formData.role}
-                                    onChange={e => setFormData({...formData, role: e.target.value})}
-                                >
-                                    <option value="Pharmacist">Pharmacist</option>
-                                    <option value="Admin">Admin</option>
-                                </select>
-                            </div>
-                            <div className="flex justify-end space-x-2 mt-6">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Create Account</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Reusable Modal for Add & Edit */}
+            <UserModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => {
+                    setIsModalOpen(false);
+                    fetchUsers();
+                }}
+                userToEdit={selectedUser}
+            />
         </div>
     );
 };

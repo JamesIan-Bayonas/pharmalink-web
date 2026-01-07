@@ -11,27 +11,29 @@ interface UserModalProps {
 const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) => {
     const [formData, setFormData] = useState({
         userName: '',
+        email: '', // <--- Add State for Email
         password: '',
         role: 'Pharmacist'
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Pre-fill form if editing
     useEffect(() => {
         if (isOpen) {
             setError('');
             if (userToEdit) {
-                // EDIT MODE: Populate fields, keep password blank
+                // EDIT MODE: Populate fields
                 setFormData({
                     userName: userToEdit.userName,
+                    email: userToEdit.email, 
                     password: '', 
                     role: userToEdit.role
                 });
             } else {
-                // CREATE MODE: Reset all
+                // CREATE MODE: Reset
                 setFormData({
                     userName: '',
+                    email: '',
                     password: '',
                     role: 'Pharmacist'
                 });
@@ -47,11 +49,13 @@ const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) =
         try {
             if (userToEdit) {
                 // UPDATE LOGIC
-                // Only include password if the user actually typed one
                 const payload: any = {
                     userName: formData.userName,
+                    email: formData.email, // <--- Send it back
                     role: formData.role
                 };
+                
+                // Only add password if typed
                 if (formData.password.trim()) {
                     payload.password = formData.password;
                 }
@@ -59,13 +63,19 @@ const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) =
                 await updateUser(userToEdit.id, payload);
             } else {
                 // CREATE LOGIC
-                await registerUser(formData);
+                await registerUser({
+                    userName: formData.userName,
+                    password: formData.password,
+                    role: formData.role
+                });
             }
             
-            onSuccess(); // Refresh parent list
+            onSuccess(); 
             onClose();
         } catch (err: any) {
-             setError(err.response?.data?.message || "Operation failed.");
+             console.error("Full Error Object:", err);
+             const msg = err.response?.data?.message || err.response?.data?.title || "Operation failed. Check console.";
+             setError(msg);
         } finally {
             setLoading(false);
         }
@@ -91,13 +101,12 @@ const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) =
                             onChange={e => setFormData({...formData, userName: e.target.value})}
                         />
                     </div>
-                    
+
                     <div>
                         <label className="block text-sm font-medium">
                             Password {userToEdit && <span className="text-gray-400 font-normal ml-1">(Leave blank to keep current)</span>}
                         </label>
                         <input 
-                            // Only required when Creating
                             required={!userToEdit}
                             type="password" 
                             className="w-full border p-2 rounded"
