@@ -8,25 +8,40 @@ const SalesHistoryPage = () => {
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    
+    // --- NEW: Date Filter State ---
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     const [selectedSale, setSelectedSale] = useState<SaleResponse | null>(null);
     const [printData, setPrintData] = useState<ReceiptData | null>(null);
 
-    useEffect(() => {
-        const fetchSales = async () => {
-            setLoading(true);
-            try {
-                const response = await getSales({ pageNumber: page, pageSize: 10 });
-                setSales(response.data);
-                setMeta(response.meta);
-            } catch (error) {
-                console.error("Failed to load sales history", error);
-            } finally {
-                setLoading(false);
-            }
-        };    
-        fetchSales();
-    }, [page]);
+    // Fetch Function
+    const fetchSales = async () => {
+        setLoading(true);
+        try {
+            // --- UPDATED: Pass dates to the service ---
+            const response = await getSales({ 
+                pageNumber: page, 
+                pageSize: 10,
+                startDate: startDate || undefined, // Send undefined if empty
+                endDate: endDate || undefined 
+            });
+            setSales(response.data);
+            setMeta(response.meta);
+        } catch (error) {
+            console.error("Failed to load sales history", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    // --- UPDATED: Trigger fetch when Page OR Dates change ---
+    useEffect(() => {
+        fetchSales();
+    }, [page, startDate, endDate]);
+
+    // Handle Printing
     useEffect(() => {
         if (printData) {
             const timer = setTimeout(() => {
@@ -36,7 +51,6 @@ const SalesHistoryPage = () => {
         }
     }, [printData]);
 
-    // ADAPTER: TRANSLATES 'SaleResponse' -> 'ReceiptData'
     const handlePrint = (sale: SaleResponse) => {
         const adapterData: ReceiptData = {
             id: sale.id,
@@ -50,16 +64,54 @@ const SalesHistoryPage = () => {
                 total: item.subTotal
             }))
         };
-
         setPrintData(adapterData);
     };
 
     return (
         <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
-            <header className="flex justify-between items-center bg-white p-4 rounded shadow-sm">
+            <header className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded shadow-sm gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">Sales History</h1>
                     <p className="text-sm text-gray-500">Audit logs and past transactions</p>
+                </div>
+
+                {/* --- NEW: Date Filter Controls --- */}
+                <div className="flex items-center space-x-3 bg-gray-50 p-2 rounded border">
+                    <div className="flex flex-col">
+                        <label className="text-[10px] uppercase font-bold text-gray-500">From</label>
+                        <input 
+                            type="date" 
+                            className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                            value={startDate}
+                            onChange={(e) => {
+                                setStartDate(e.target.value);
+                                setPage(1); // Reset to page 1 when filter changes
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label className="text-[10px] uppercase font-bold text-gray-500">To</label>
+                        <input 
+                            type="date" 
+                            className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                            value={endDate}
+                            onChange={(e) => {
+                                setEndDate(e.target.value);
+                                setPage(1); // Reset to page 1 when filter changes
+                            }}
+                        />
+                    </div>
+
+                    {/* Clear Button (Only shows if filters are active) */}
+                    {(startDate || endDate) && (
+                        <button 
+                            onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
+                            title="Clear Filters"
+                        >
+                            ✕ Clear
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -79,7 +131,7 @@ const SalesHistoryPage = () => {
                         {loading ? (
                             <tr><td colSpan={5} className="text-center py-8">Loading records...</td></tr>
                         ) : sales.length === 0 ? (
-                            <tr><td colSpan={5} className="text-center py-8">No sales recorded yet.</td></tr>
+                            <tr><td colSpan={5} className="text-center py-8">No sales found for this period.</td></tr>
                         ) : (
                             sales.map((sale) => (
                                 <tr key={sale.id} className="border-b border-gray-200 hover:bg-gray-50">

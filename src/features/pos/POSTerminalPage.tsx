@@ -141,7 +141,7 @@ const POSTerminalPage = () => {
                     value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
                 />
                 <div className="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-4 content-start">
-                    {medicines.map(med => (
+                    {medicines.map(med => ( 
                         <button key={med.id} onClick={() => addToCart(med)} className="p-4 border rounded hover:border-blue-500 text-left">
                             <div className="font-bold">{med.name}</div>
                             <div className="text-sm text-gray-500">Stock: {med.stockQuantity}</div>
@@ -149,7 +149,7 @@ const POSTerminalPage = () => {
                         </button>
                     ))}
                 </div>
-            </div>
+            </div>  
 
             {/* Right Side: Cart */}
             <div className="w-full md:w-96 bg-gray-50 p-4 rounded shadow-sm flex flex-col border-l">

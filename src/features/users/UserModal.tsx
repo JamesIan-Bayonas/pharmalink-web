@@ -11,7 +11,7 @@ interface UserModalProps {
 const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) => {
     const [formData, setFormData] = useState({
         userName: '',
-        email: '', // <--- Add State for Email
+        email: '',
         password: '',
         role: 'Pharmacist'
     });
@@ -51,7 +51,7 @@ const UserModal = ({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) =
                 // UPDATE LOGIC
                 const payload: any = {
                     userName: formData.userName,
-                    email: formData.email, // <--- Send it back
+                    email: formData.email,
                     role: formData.role
                 };
                 
