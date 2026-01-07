@@ -37,7 +37,6 @@ const CategoryManagementPage = () => {
         fetchCategories();
     }, []);
 
-    // === NEW LOGIC: HANDLE ACCORDION CLICK ===
     const toggleCategory = async (catId: number) => {
         // If clicking the already open one, close it
         if (expandedCategoryId === catId) {
@@ -89,14 +88,36 @@ const CategoryManagementPage = () => {
         setEditingId(cat.id);
     };
 
-    const handleDelete = async (e: React.MouseEvent, id: number) => {
-        e.stopPropagation(); // Prevent toggling the accordion when clicking Delete
-        if (!window.confirm("Delete this category?")) return;
+    const handleDelete = async (e: React.MouseEvent, category: Category) => {
+        e.stopPropagation();
+
+        // AUDIT: Real-time check for existing medicines
         try {
-            await deleteCategory(id);
-            setCategories(prev => prev.filter(c => c.id !== id));
+            const checkResponse = await getMedicines({ 
+                categoryId: category.id, 
+                pageSize: 1 // We only need to know if ONE exists
+            });
+
+            if (checkResponse.data.length > 0) {
+                alert(`Cannot delete "${category.name}".\n\nIt contains ${checkResponse.meta.totalCount} medicines. Please delete or reassign them first.`);
+                return; 
+            }
         } catch (error) {
-            alert("Cannot delete: This category likely contains medicines.");
+            console.error("Failed to verify category contents", error);
+            alert("Could not verify if category is safe to delete. Please try again.");
+            return;
+        }
+
+        //  Only reachable if category is empty
+        if (!window.confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) return;
+
+        // Proceed with deletion
+        try {
+            await deleteCategory(category.id);
+            setCategories(prev => prev.filter(c => c.id !== category.id));
+            if (expandedCategoryId === category.id) setExpandedCategoryId(null);
+        } catch (error) {
+            alert("Failed to delete category.");
         }
     };
 
@@ -123,8 +144,7 @@ const CategoryManagementPage = () => {
                                 `}
                             >
                                 <div className="flex items-center gap-2">
-                                    <span className={`transform transition-transform ${expandedCategoryId === cat.id ? 'rotate-90' : ''}`}>
-                                        ▶
+                                    <span className={`transform transition-transform ${expandedCategoryId === cat.id ? 'rotate-90' : ''}`}>  
                                     </span>
                                     <span className="font-medium text-gray-800">{cat.name}</span>
                                     {cat.medicineCount !== undefined && (
@@ -135,7 +155,7 @@ const CategoryManagementPage = () => {
                                 </div>
                                 <div className="space-x-2">
                                     <button onClick={(e) => handleEdit(e, cat)} className="text-blue-600 text-sm hover:underline">Edit</button>
-                                    <button onClick={(e) => handleDelete(e, cat.id)} className="text-red-500 text-sm hover:underline">Delete</button>
+                                    <button onClick={(e) => handleDelete(e, cat)} className="text-red-500 text-sm hover:underline">Delete</button>
                                 </div>
                             </div>
 
