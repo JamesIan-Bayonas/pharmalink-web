@@ -1,2 +1,52 @@
 @import 'tailwindcss';  
 @tailwind utilities;
+
+/* --- PRINT STYLES (Thermal Receipt) --- */
+
+/* 1. By default, hide the receipt on the screen */
+#printable-receipt {
+  display: none;
+}
+
+/* 2. When Printing (Ctrl+P or window.print) */
+@media print {
+  
+  /* Hide the entire web app */
+  body * {
+    visibility: hidden;
+    /* IMPORTANT: Reset height/overflow so long receipts don't get cut off */
+    height: auto; 
+    overflow: visible;
+  }
+
+  /* Reveal ONLY the receipt */
+  #printable-receipt {
+    /* Override the display:none */
+    display: block !important; 
+    visibility: visible !important;
+
+    /* Position absolutely at the top-left of the paper */
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+
+    /* Formatting for Thermal Printers */
+    background: white;
+    color: black; /* Force black text */
+    z-index: 9999; /* Sit on top of everything */
+  }
+
+  /* Ensure all content inside the receipt is also visible */
+  #printable-receipt * {
+    visibility: visible;
+  }
+
+  /* Remove browser default headers/footers (URL, Date, Page #) */
+  @page {
+    margin: 0;
+    size: auto; 
+  }
+}
