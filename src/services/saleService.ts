@@ -22,7 +22,7 @@ export interface SaleItemResponse {
 }
 
 export interface CreateSaleRequest {
-    items: SaleItemDto[];
+    Items: SaleItemDto[];
 }
 
 // What the API returns (Matches SaleResponseDto.cs)
@@ -59,5 +59,5 @@ export const getSales = async (params: SalesParams): Promise<SaleApiResponse> =>
 };
 
 export const voidSale = async (id: number): Promise<void> => {
-    await api.post(`/Sales/${id}/void`);
+    await api.delete(`/Sales/${id}`);
 };

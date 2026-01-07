@@ -39,6 +39,7 @@ export interface MedicineParams {
     searchTerm?: string;
     orderBy?: string;
     categoryId?: number;
+    filter?: string; // e.g., "expired", "lowstock" 
 }
 
 export interface UpdateStockRequest {
