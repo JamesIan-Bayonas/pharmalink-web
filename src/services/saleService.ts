@@ -34,9 +34,11 @@ export interface SaleResponse {
     items: SaleItemResponse[];
 }
 
-export interface SaleParams {
+export interface SalesParams {
     pageNumber?: number;
     pageSize?: number;
+    startDate?: string; // ISO Date String (YYYY-MM-DD)
+    endDate?: string;   // ISO Date String (YYYY-MM-DD)
 }
 
 export interface SaleApiResponse {
@@ -49,7 +51,7 @@ export const createSale = async (data: CreateSaleRequest): Promise<SaleResponse>
     return response.data;
 };
 
-export const getSales = async (params: SaleParams): Promise<SaleApiResponse> => {
+export const getSales = async (params: SalesParams): Promise<SaleApiResponse> => {
     const response = await api.get<SaleApiResponse>('/Sales', { params });
     return response.data;
 };

@@ -41,6 +41,10 @@ export interface MedicineParams {
     categoryId?: number;
 }
 
+export interface UpdateStockRequest {
+    quantity: number;
+}
+
 export const getMedicines = async (params: MedicineParams): Promise<MedicineApiResponse> => {
     const response = await api.get<MedicineApiResponse>('/Medicines', { params });
     return response.data;
@@ -56,4 +60,10 @@ export const updateMedicine = async (id: number, data: CreateMedicineRequest): P
 
 export const deleteMedicine = async (id: number): Promise<void> => {
     await api.delete(`/Medicines/${id}`);
+};
+
+export const updateMedicineStock = async (id: number, quantity: number): Promise<void> => {
+    // Backend Logic: "Stock - Quantity". 
+    // To ADD stock, we must send a NEGATIVE number. (e.g., -50 adds 50)
+    await api.patch(`/Medicines/${id}/stock`, { quantity: -quantity });
 };
