@@ -17,6 +17,7 @@ export interface CreateUserRequest {
 
 export interface UpdateUserRequest {
     userName: string;
+    email: string;
     password?: string; 
     role: string;
 }
@@ -27,7 +28,7 @@ export const getAllUsers = async (): Promise<UserResponse[]> => {
 };
     
 export const deleteUser = async (id: number): Promise<void> => {
-    await api.delete(`/Users/${id}`);
+    await api.delete(`/Auth/Users/${id}`);
 };
 
 // We use the Auth registration endpoint, but call it from inside the app
@@ -36,5 +37,5 @@ export const registerUser = async (data: CreateUserRequest): Promise<void> => {
 };
 
 export const updateUser = async (id: number, data: UpdateUserRequest): Promise<void> => {
-    await api.put(`/Users/${id}`, data);
+    await api.put(`/Auth/Users/${id}`, data);
 };

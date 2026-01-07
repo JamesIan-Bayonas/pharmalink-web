@@ -50,6 +50,10 @@ export const createMedicine = async (data: CreateMedicineRequest): Promise<void>
     await api.post('/Medicines', data);
 };
 
+export const updateMedicine = async (id: number, data: CreateMedicineRequest): Promise<void> => {
+    await api.put(`/Medicines/${id}`, data);
+};
+
 export const deleteMedicine = async (id: number): Promise<void> => {
     await api.delete(`/Medicines/${id}`);
 };

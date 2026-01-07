@@ -21,7 +21,7 @@ export interface SaleItemResponse {
     subTotal: number;
 }
 
-export interface CreateSaleRequest {    
+export interface CreateSaleRequest {
     items: SaleItemDto[];
 }
 
@@ -52,4 +52,8 @@ export const createSale = async (data: CreateSaleRequest): Promise<SaleResponse>
 export const getSales = async (params: SaleParams): Promise<SaleApiResponse> => {
     const response = await api.get<SaleApiResponse>('/Sales', { params });
     return response.data;
+};
+
+export const voidSale = async (id: number): Promise<void> => {
+    await api.post(`/Sales/${id}/void`);
 };
