@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { getSales, type SaleResponse, type PaginationMeta } from '../../services/saleService';
+import { getSales, voidSale, type SaleResponse, type PaginationMeta } from '../../services/saleService';
+import { useAuth } from '../../context/AuthContext'; // Import Auth for Role Check
 import PrintableReceipt, { type ReceiptData } from '../pos/PrintableReciept'; 
 
 const SalesHistoryPage = () => {
+    const { user } = useAuth(); // Get current user
 
     const [sales, setSales] = useState<SaleResponse[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     
-    // Date Filters
+    // Filters
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
@@ -19,7 +21,7 @@ const SalesHistoryPage = () => {
     const [selectedSale, setSelectedSale] = useState<SaleResponse | null>(null);
     const [printData, setPrintData] = useState<ReceiptData | null>(null);
 
-    // Fetch Function (Standard Pagination)
+    // Fetch Function
     const fetchSales = async () => {
         setLoading(true);
         try {
@@ -42,61 +44,56 @@ const SalesHistoryPage = () => {
         fetchSales();
     }, [page, startDate, endDate]);
 
-    // --- NEW: EXPORT LOGIC ---
+    // VOID LOGIC
+    const handleVoid = async (saleId: number) => {
+        if (!window.confirm(`Are you sure you want to VOID Sale #${saleId}?\n\nThis will:\n1. Delete the transaction record.\n2. Restore items to inventory.\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await voidSale(saleId);
+            alert("Sale voided successfully. Inventory has been restored.");
+            fetchSales(); // Refresh table to remove the deleted item
+        } catch (error: any) {
+            console.error("Void failed", error);
+            alert("Failed to void sale: " + (error.response?.data?.message || "Unknown error"));
+        }
+    };
+
+    // Export Logic
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            // 1. Fetch ALL matching records (Requesting 10,000 items to bypass pagination)
             const response = await getSales({ 
                 pageNumber: 1, 
                 pageSize: 10000, 
                 startDate: startDate || undefined,
                 endDate: endDate || undefined 
             });
-
             const allSales = response.data;
+            if (allSales.length === 0) { alert("No records to export."); return; }
 
-            if (allSales.length === 0) {
-                alert("No records to export.");
-                return;
-            }
-
-            // 2. Define CSV Headers
             const headers = ["Receipt ID", "Date", "Time", "Items Count", "Total Amount", "Cashier ID"];
-
-            // 3. Convert Data to CSV String
             const csvRows = allSales.map(sale => {
                 const dateObj = new Date(sale.transactionDate);
-                const dateStr = dateObj.toLocaleDateString();
-                const timeStr = dateObj.toLocaleTimeString();
-
                 return [
                     sale.id,
-                    `"${dateStr}"`, // Quote strings to handle commas safely
-                    `"${timeStr}"`,
+                    `"${dateObj.toLocaleDateString()}"`,
+                    `"${dateObj.toLocaleTimeString()}"`,
                     sale.items.length,
                     sale.totalAmount.toFixed(2),
                     sale.userId
                 ].join(",");
             });
-
-            // Combine Header + Rows
             const csvContent = [headers.join(","), ...csvRows].join("\n");
-
-            // 4. Trigger Download
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            
-            // File Name: Sales_Report_2023-10-25.csv
-            const fileName = `Sales_Report_${new Date().toISOString().split('T')[0]}.csv`;
-            link.setAttribute("download", fileName);
-            
+            link.setAttribute("download", `Sales_Report_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
         } catch (error) {
             console.error("Export failed", error);
             alert("Failed to export data.");
@@ -104,14 +101,11 @@ const SalesHistoryPage = () => {
             setIsExporting(false);
         }
     };
-    // --- END EXPORT LOGIC ---
 
-    // Handle Printing
+    // Printing Logic
     useEffect(() => {
         if (printData) {
-            const timer = setTimeout(() => {
-                window.print();
-            }, 500);
+            const timer = setTimeout(() => { window.print(); }, 500);
             return () => clearTimeout(timer);
         }
     }, [printData]);
@@ -124,8 +118,8 @@ const SalesHistoryPage = () => {
             cashierName: `Staff #${sale.userId}`, 
             items: sale.items.map(item => ({
                 name: item.medicineName, 
-                qty: item.quantity,
-                price: item.unitPrice,
+                qty: item.quantity, 
+                price: item.unitPrice, 
                 total: item.subTotal
             }))
         };
@@ -140,54 +134,27 @@ const SalesHistoryPage = () => {
                     <p className="text-sm text-gray-500">Audit logs and past transactions</p>
                 </div>
 
-                {/* Filter & Export Bar */}
                 <div className="flex flex-wrap items-center gap-3">
-                    
-                    {/* Date Inputs */}
+                    {/* Filters */}
                     <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded border">
                         <div className="flex flex-col">
                             <label className="text-[10px] uppercase font-bold text-gray-500">From</label>
-                            <input 
-                                type="date" 
-                                className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                                value={startDate}
-                                onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                            />
+                            <input type="date" className="bg-white border rounded px-2 py-1 text-sm outline-none"
+                                value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} />
                         </div>
                         <div className="flex flex-col">
                             <label className="text-[10px] uppercase font-bold text-gray-500">To</label>
-                            <input 
-                                type="date" 
-                                className="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                                value={endDate}
-                                onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-                            />
+                            <input type="date" className="bg-white border rounded px-2 py-1 text-sm outline-none"
+                                value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
                         </div>
                         {(startDate || endDate) && (
-                            <button 
-                                onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
-                                className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
-                            >
-                                ✕ Clear
-                            </button>
+                            <button onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }} className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold">✕ Clear</button>
                         )}
                     </div>
 
-                    {/* --- NEW EXPORT BUTTON --- */}
-                    <button 
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold shadow-sm disabled:opacity-50 transition"
-                    >
+                    <button onClick={handleExport} disabled={isExporting} className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold shadow-sm disabled:opacity-50 transition">
                         <span>{isExporting ? 'Generating...' : 'Export Excel'}</span>
-                        {/* Simple Download Icon */}
-                        {!isExporting && (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                        )}
                     </button>
-
                 </div>
             </header>
 
@@ -198,38 +165,37 @@ const SalesHistoryPage = () => {
                         <tr className="text-gray-600 uppercase text-sm leading-normal">
                             <th className="py-3 px-6">Receipt ID</th>
                             <th className="py-3 px-6">Date & Time</th>
-                            <th className="py-3 px-6 text-center">Items Count</th>
-                            <th className="py-3 px-6 text-right">Total Amount</th>
-                            <th className="py-3 px-6 text-center">Action</th>
+                            <th className="py-3 px-6 text-center">Items</th>
+                            <th className="py-3 px-6 text-right">Total</th>
+                            <th className="py-3 px-6 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 text-sm">
                         {loading ? (
                             <tr><td colSpan={5} className="text-center py-8">Loading records...</td></tr>
                         ) : sales.length === 0 ? (
-                            <tr><td colSpan={5} className="text-center py-8">No sales found for this period.</td></tr>
+                            <tr><td colSpan={5} className="text-center py-8">No sales found.</td></tr>
                         ) : (
                             sales.map((sale) => (
                                 <tr key={sale.id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="py-3 px-6 font-medium">#{sale.id}</td>
-                                    <td className="py-3 px-6">
-                                        {new Date(sale.transactionDate).toLocaleString()}
-                                    </td>
+                                    <td className="py-3 px-6">{new Date(sale.transactionDate).toLocaleString()}</td>
                                     <td className="py-3 px-6 text-center">
-                                        <span className="bg-blue-100 text-blue-800 py-1 px-3 rounded-full text-xs">
-                                            {sale.items.length} items
-                                        </span>
+                                        <span className="bg-blue-100 text-blue-800 py-1 px-3 rounded-full text-xs">{sale.items.length} items</span>
                                     </td>
-                                    <td className="py-3 px-6 text-right font-bold text-gray-800">
-                                        ₱{sale.totalAmount.toFixed(2)}
-                                    </td>
-                                    <td className="py-3 px-6 text-center">
-                                        <button 
-                                            onClick={() => setSelectedSale(sale)}
-                                            className="text-blue-600 hover:underline font-bold"
-                                        >
-                                            View Receipt
-                                        </button>
+                                    <td className="py-3 px-6 text-right font-bold text-gray-800">₱{sale.totalAmount.toFixed(2)}</td>
+                                    <td className="py-3 px-6 text-center space-x-4">
+                                        <button onClick={() => setSelectedSale(sale)} className="text-blue-600 hover:underline font-bold">View</button>
+                                        
+                                        {/* --- VOID BUTTON (Only for Admins) --- */}
+                                        {user?.role === 'Admin' && (
+                                            <button 
+                                                onClick={() => handleVoid(sale.id)}
+                                                className="text-red-500 hover:text-red-700 font-bold text-xs border border-red-200 bg-red-50 px-2 py-1 rounded"
+                                            >
+                                                VOID
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -238,32 +204,18 @@ const SalesHistoryPage = () => {
                 </table>
             </div>
 
-            {/* Pagination Table*/}
+            {/* Pagination Controls */}
             {meta && (
                 <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm">
-                    <span className="text-gray-600 text-sm">
-                        Page {meta.currentPage} of {meta.totalPages} ({meta.totalCount} records)
-                    </span>
+                    <span className="text-gray-600 text-sm">Page {meta.currentPage} of {meta.totalPages} ({meta.totalCount} records)</span>
                     <div className="space-x-2">
-                        <button 
-                            disabled={meta.currentPage === 1}
-                            onClick={() => setPage(p => p - 1)}
-                            className="px-3 py-1 border rounded disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        <button 
-                            disabled={meta.currentPage === meta.totalPages}
-                            onClick={() => setPage(p => p + 1)}
-                            className="px-3 py-1 border rounded disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+                        <button disabled={meta.currentPage === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded disabled:opacity-50">Previous</button>
+                        <button disabled={meta.currentPage === meta.totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
                     </div>
                 </div>
             )}
 
-            {/* RECEIPT MODAL */}
+            {/* Receipt Modal (Same as before) */}
             {selectedSale && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-xl max-h-[90vh] flex flex-col">
@@ -271,11 +223,7 @@ const SalesHistoryPage = () => {
                             <h2 className="text-xl font-bold">Receipt #{selectedSale.id}</h2>
                             <button onClick={() => setSelectedSale(null)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
                         </div>
-                        
-                        <div className="text-sm text-gray-500 mb-4">
-                            Date: {new Date(selectedSale.transactionDate).toLocaleString()}
-                        </div>
-
+                        <div className="text-sm text-gray-500 mb-4">Date: {new Date(selectedSale.transactionDate).toLocaleString()}</div>
                         <div className="flex-1 overflow-y-auto space-y-2 mb-4">
                             {selectedSale.items.map((item) => (
                                 <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
@@ -287,25 +235,13 @@ const SalesHistoryPage = () => {
                                 </div>
                             ))}
                         </div>
-
                         <div className="border-t pt-4 flex justify-between items-center text-lg font-bold">
                             <span>Total Paid</span>
                             <span className="text-green-600">₱{selectedSale.totalAmount.toFixed(2)}</span>
                         </div>
-                        
                         <div className="flex gap-2 mt-6">
-                            <button 
-                                onClick={() => handlePrint(selectedSale)}
-                                className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold"
-                            >
-                                Print
-                            </button>
-                            <button 
-                                onClick={() => setSelectedSale(null)}
-                                className="flex-1 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                            >
-                                Close
-                            </button>
+                            <button onClick={() => handlePrint(selectedSale)} className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold">Print</button>
+                            <button onClick={() => setSelectedSale(null)} className="flex-1 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Close</button>
                         </div>
                     </div>
                 </div>
