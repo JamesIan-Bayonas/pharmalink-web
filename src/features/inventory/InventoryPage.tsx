@@ -3,6 +3,7 @@ import { getMedicines, deleteMedicine, type Medicine, type PaginationMeta } from
 import { getAllCategories } from '../../services/categoryService';
 import { useAuth } from '../../context/AuthContext';
 import AddMedicineModal from './AddMedicineModal';
+import RestockModal from './RestockModal'; // Import the new modal
 
 const InventoryPage = () => {
     const { user } = useAuth();
@@ -11,15 +12,18 @@ const InventoryPage = () => {
     const [medicines, setMedicines] = useState<Medicine[]>([]);
     const [categories, setCategories] = useState<Record<number, string>>({});
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
-    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
     
     // UI State
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    // Helper Function: Fetch Inventory
+    // Modal State
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+
+    // Fetch Inventory
     const fetchInventory = async () => {
         setLoading(true);
         try {
@@ -37,7 +41,7 @@ const InventoryPage = () => {
         }
     };
 
-    // initially Load Categories (Lookup Map)
+    // Load Categories
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -53,10 +57,9 @@ const InventoryPage = () => {
         fetchCategories();
     }, []);
 
-    // Load Medicines whenever Page or Search changes
     useEffect(() => {
         fetchInventory();
-    }, [page, searchTerm]); // Re-run when these change
+    }, [page, searchTerm]);
 
     // Delete Handler
     const handleDelete = async (id: number) => {
@@ -66,17 +69,23 @@ const InventoryPage = () => {
             // Refresh the list after delete
             setMedicines(prev => prev.filter(m => m.id !== id));
         } catch (error) {
-            alert("Failed to delete. You might not have permission.");
+            alert("Failed to delete.");
         }
     };
 
+    // Handlers for Modals
     const handleEdit = (medicine: Medicine) => {
         setSelectedMedicine(medicine);
-        setIsAddModalOpen(true);
+        setIsAddModalOpen(true); // Re-use the Add Modal for Editing
+    };
+
+    const handleRestock = (medicine: Medicine) => {
+        setSelectedMedicine(medicine);
+        setIsRestockModalOpen(true);
     };
 
     const handleAdd = () => {
-        setSelectedMedicine(null);
+        setSelectedMedicine(null); // Clear selection for "Add New"
         setIsAddModalOpen(true);
     };
 
@@ -91,12 +100,14 @@ const InventoryPage = () => {
                         type="text" 
                         placeholder="Search medicines..." 
                         value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }} // Reset to page 1 on search
+                        onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                         className="border p-2 rounded w-full md:w-64"
                     />
                     {user?.role === 'Admin' && (
-                        <button onClick={handleAdd}
-                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
+                        <button 
+                            onClick={handleAdd}
+                            className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700"
+                        >
                             + Add Medicine
                         </button>
                     )}
@@ -139,22 +150,33 @@ const InventoryPage = () => {
                                     <td className="py-3 px-6 text-center">
                                         {new Date(item.expiryDate).toLocaleDateString()}
                                     </td>
-                                    <td className="py-3 px-6 text-center">
+                                    <td className="py-3 px-6 text-center space-x-2">
                                         {user?.role === 'Admin' && (
-                                            <div className="flex justify-center space-x-4">
+                                            <>
+                                                {/* Restock Button */}
+                                                <button 
+                                                    onClick={() => handleRestock(item)}
+                                                    className="text-green-600 hover:text-green-800 font-bold text-xs border border-green-600 px-2 py-1 rounded"
+                                                >
+                                                    + Stock
+                                                </button>
+                                                
+                                                {/* Edit Button */}
                                                 <button 
                                                     onClick={() => handleEdit(item)}
-                                                    className="text-indigo-600 hover:text-indigo-900 font-bold"
+                                                    className="text-blue-600 hover:text-blue-800 font-bold"
                                                 >
                                                     Edit
                                                 </button>
+
+                                                {/* Delete Button */}
                                                 <button 
                                                     onClick={() => handleDelete(item.id)}
                                                     className="text-red-500 hover:text-red-700 font-bold"
                                                 >
-                                                    Delete
+                                                    ×
                                                 </button>
-                                            </div>
+                                            </>
                                         )}
                                     </td>
                                 </tr>
@@ -168,7 +190,7 @@ const InventoryPage = () => {
             {meta && (
                 <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm">
                     <span className="text-gray-600 text-sm">
-                        Showing Page {meta.currentPage} of {meta.totalPages}
+                        Page {meta.currentPage} of {meta.totalPages}
                     </span>
                     <div className="space-x-2">
                         <button 
@@ -189,15 +211,20 @@ const InventoryPage = () => {
                 </div>
             )}
             
-            {/* The Modal Component (Added Here) */}
+            {/* ADD / EDIT MODAL */}
             <AddMedicineModal 
                 isOpen={isAddModalOpen} 
                 onClose={() => setIsAddModalOpen(false)} 
-                onSuccess={() => {
-                    setIsAddModalOpen(false); 
-                    fetchInventory(); // Calls the function we moved up
-                }}
-                medicineToEdit={selectedMedicine}
+                onSuccess={() => { setIsAddModalOpen(false); fetchInventory(); }} 
+                medicineToEdit={selectedMedicine} // Pass the selected item
+            />
+
+            {/* RESTOCK MODAL */}
+            <RestockModal
+                isOpen={isRestockModalOpen}
+                onClose={() => setIsRestockModalOpen(false)}
+                onSuccess={() => { fetchInventory(); }}
+                medicine={selectedMedicine}
             />
         </div>
     );

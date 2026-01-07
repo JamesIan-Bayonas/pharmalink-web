@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { getSales, type SaleResponse, type PaginationMeta } from '../../services/saleService';
-// 1. IMPORT THE GHOST COMPONENT
-// Note: Ensure the filename matches yours (Reciept vs Receipt)
 import PrintableReceipt, { type ReceiptData } from '../pos/PrintableReciept'; 
 
 const SalesHistoryPage = () => {
