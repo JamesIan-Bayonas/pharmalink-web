@@ -104,43 +104,45 @@ const DashboardPage = () => {
             {/* MIDDLE ROW: CHART SECTION */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Weekly Sales Trend</h3>
-                <div className="h-64 w-full">
-                    {stats.weeklySales && stats.weeklySales.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stats.weeklySales}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis 
-                                    dataKey="dateLabel" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#6B7280', fontSize: 12 }} 
-                                    dy={10}
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#6B7280', fontSize: 12 }} 
-                                    tickFormatter={(value) => `₱${value}`}
-                                />
-                                <Tooltip 
-                                    cursor={{ fill: '#F3F4F6' }}
-                                    formatter={(value: any) => [`₱${value.toLocaleString()}`, 'Revenue']}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                />
-                                <Bar 
-                                    dataKey="totalAmount"
-                                    fill="#3B82F6" 
-                                    radius={[4, 4, 0, 0]} 
-                                    barSize={40}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-full flex items-center justify-center text-gray-400">
-                            No sales data for the last 7 days.
-                        </div>
-                    )}
-                </div>
+                {/* --- CHART SECTION START --- */}
+            <div className="w-full h-[300px]">
+                {stats.weeklySales && stats.weeklySales.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={stats.weeklySales}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis 
+                                dataKey="dateLabel" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#6B7280', fontSize: 12 }} 
+                                dy={10}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#6B7280', fontSize: 12 }} 
+                                tickFormatter={(value) => `₱${value}`}
+                            />
+                            <Tooltip 
+                                cursor={{ fill: '#F3F4F6' }}
+                                formatter={(value: any) => [`₱${Number(value).toLocaleString()}`, 'Revenue']}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                            />
+                            <Bar 
+                                dataKey="totalAmount"
+                                fill="#3B82F6" 
+                                radius={[4, 4, 0, 0]} 
+                                barSize={40}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400 border border-dashed rounded-lg">
+                        No sales data for the last 7 days.
+                    </div>
+                )}
+            </div>
+            {/* --- CHART SECTION END --- */}
             </div>
 
             {/* BOTTOM ROW: QUICK ACTIONS */}
