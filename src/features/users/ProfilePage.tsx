@@ -1,22 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile, uploadProfilePhoto } from '../../services/userService';
+import { updateProfile, uploadProfilePhoto, getMyProfile } from '../../services/userService';
 
 const ProfilePage = () => {
     const { user } = useAuth();
     
     // Form State
-    const [userName, setUserName] = useState(user?.username || '');
+    const [userName, setUserName] = useState(''); // Initialize empty, load from API
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
     // Image State
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [profileImageServerUrl, setProfileImageServerUrl] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     // UI State
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    // Load Fresh Data on Mount 
+    useEffect(() => {
+        const loadProfile = async () => {
+            try {
+                setLoading(true);
+                // Fetch fresh data from the server
+                const profileData = await getMyProfile();
+                
+                setUserName(profileData.userName);
+
+                // Construct full URL if path exists
+                if (profileData.profileImagePath) {
+                    // Adjust this port if your API runs on a different one (e.g. 5000, 7200)
+                    const baseUrl = "http://localhost:5297/"; 
+                    setProfileImageServerUrl(`${baseUrl}${profileData.profileImagePath}`);
+                }
+            } catch (error) {
+                console.error("Failed to load profile", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadProfile();
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -33,25 +59,34 @@ const ProfilePage = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            // 1. Upload Image (if selected)
+            // Upload Image (if selected)
             if (selectedFile) {
                 await uploadProfilePhoto(selectedFile);
             }
 
-            // 2. Update Text Details (Password/Username)
+            // Update Text Details (Password/Username)
             if (password && password !== confirmPassword) {
                 throw new Error("Passwords do not match.");
             }
 
             await updateProfile({
                 userName: userName,
-                email: "placeholder@email.com", // Your DTO requires email, ensuring it's not null
-                password: password || undefined // Only send if typed
+                email: "placeholder@email.com", // Your DTO requires email
+                password: password || undefined 
             });
 
             setMessage({ type: 'success', text: 'Profile updated successfully! Please re-login to see changes.' });
             setPassword('');
             setConfirmPassword('');
+            
+            // Re-fetch profile to show new image immediately without refresh
+            const updatedProfile = await getMyProfile();
+            if (updatedProfile.profileImagePath) {
+                 const baseUrl = "http://localhost:5297/";
+                 setProfileImageServerUrl(`${baseUrl}${updatedProfile.profileImagePath}`);
+                 setPreviewImage(null); // Clear local preview
+            }
+
         } catch (error: any) {
             console.error(error);
             setMessage({ type: 'error', text: error.response?.data?.message || error.message || "Failed to update profile." });
@@ -76,14 +111,17 @@ const ProfilePage = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     
-                    {/* --- SECTION 1: AVATAR --- */}
+                    {/* AVATAR*/}
                     <div className="flex flex-col items-center space-y-4">
                         <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-inner bg-gray-50">
+                            {/* Logic = 1. Local Preview -> 2. Server Image -> 3. Initials */}
                             {previewImage ? (
-                                <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+                                <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                            ) : profileImageServerUrl ? (
+                                <img src={profileImageServerUrl} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl font-bold">
-                                    {user?.username?.charAt(0).toUpperCase()}
+                                    {userName?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase()}
                                 </div>
                             )}
                         </div>

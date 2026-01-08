@@ -9,6 +9,7 @@ import POSTerminalPage from './features/pos/POSTerminalPage';
 import SalesHistoryPage from './features/sales/SalesHistoryPage';
 import UserManagementPage from './features/users/UserManagementPage';
 import CategoryManagementPage from './features/categories/CategoryManagementPage';
+import ProfilePage from './features/users/ProfilePage';
 
 // Placeholders (Create these files later as .tsx)
 // const Dashboard = () => <h2>Dashboard (Common)</h2>;
@@ -29,7 +30,6 @@ function App() {
           <Route element={<ProtectedRoute />}>
             {/* Dashboard Layout */}
             <Route element={<DashboardLayout />}>
-            
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route element={<RoleRoute allowedRoles={['Admin', 'Pharmacist']} />}>
@@ -40,6 +40,7 @@ function App() {
                 <Route path="/inventory" element={<InventoryPage />} />
                 <Route path="/users" element={<UserManagementPage />} />
                 <Route path="/categories" element={<CategoryManagementPage />} />
+                <Route path="profile" element={<ProfilePage />} />
               </Route>
 
             </Route>
