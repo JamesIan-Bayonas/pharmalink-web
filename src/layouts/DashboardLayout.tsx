@@ -12,6 +12,7 @@ const DashboardLayout = () => {
     };
 
     const navItems = [
+        { label: 'My Profile', path: '/profile', roles: ['Admin', 'Pharmacist'] },
         { label: 'Overview', path: '/dashboard', roles: ['Admin', 'Pharmacist'] },
         { label: 'POS Terminal', path: '/sales', roles: ['Admin', 'Pharmacist'] },
         { label: 'Sales History', path: '/history', roles: ['Admin', 'Pharmacist'] },
