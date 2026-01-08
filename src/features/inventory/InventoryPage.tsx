@@ -20,7 +20,7 @@ const InventoryPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     
-    // --- NEW: Category Filter State ---
+    // Category Filter State 
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
 
     // Read Filter from URL 

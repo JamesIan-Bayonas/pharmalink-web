@@ -93,7 +93,7 @@ const POSTerminalPage = () => {
                 medicineId: item.id, quantity: item.cartQuantity
             }));
 
-            const result = await createSale({ items: salesItems });
+            const result = await createSale({ Items: salesItems });
 
             console.log("API RESULT:", result); 
             

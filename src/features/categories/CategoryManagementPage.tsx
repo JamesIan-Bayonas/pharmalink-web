@@ -44,7 +44,7 @@ const CategoryManagementPage = () => {
         } catch (error: any) {
             // Show specific error message from API
             const message = error.response?.data?.message || "Failed to delete category. It might be in use.";
-            alert("❌ " + message);
+            alert("Error: " + message);
         }
     };
 
