@@ -1,73 +1,93 @@
-# React + TypeScript + Vite
+# PharmaLink 🏥
+### Efficient Management for Modern Pharmacies
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PharmaLink is a full-stack **Pharmacy Management System** designed to streamline inventory tracking, sales processing, and user administration. It features a secure, role-based architecture separating **Admins** (Inventory/User Managers) from **Pharmacists** (Point of Sale/Sales).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Tech Stack
 
-## React Compiler
+### **Frontend**
+* **Framework:** React 18 (Vite)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS
+* **State Management:** React Context API (Auth)
+* **Routing:** React Router DOM v6
+* **Charts:** Recharts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### **Backend** (API)
+* **Framework:** ASP.NET Core Web API 8.0
+* **Language:** C#
+* **ORM:** Dapper / ADO.NET
+* **Database:** Microsoft SQL Server
+* **Authentication:** JWT (JSON Web Tokens)
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ✨ Key Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 🛡️ **Role-Based Access Control (RBAC)**
+* **Admin**: Full access to Inventory, Categories, User Management, and Dashboard Analytics.
+* **Pharmacist**: Restricted access to POS Terminal, Sales History, and Personal Profile.
+* **Security**: Routes are protected via `ProtectedRoutes` and `RoleRoute` guards.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 💊 **Inventory Management**
+* Real-time stock tracking.
+* "Low Stock" and "Expiring Soon" filters.
+* Add, Edit, Delete, and Restock medicines.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 🛒 **Point of Sale (POS)**
+* Fast product search and cart management.
+* Real-time total calculation.
+* Generates printable receipts.
+* Automatic stock deduction upon sale completion.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 📊 **Dashboard Analytics**
+* Visual charts for weekly sales trends.
+* Key metrics: Total Revenue, Low Stock Alerts, Expiring Items.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🛠️ Setup Instructions
+
+### 1. Database Setup 🗄️
+Before running the API, you must configure the database.
+1.  Open **Microsoft SQL Server Management Studio (SSMS)**.
+2.  Create a new database named `PharmaLinkDB`.
+3.  Open the file `DatabaseSetup.sql` provided in the backend folder.
+4.  **Execute** the script to generate the required Tables (`Users`, `Medicines`, `Sales`, etc.) and Seed Data (Default Admin/Pharmacist accounts).
+
+### 2. Backend API Setup ⚙️
+1.  Navigate to the `PharmaLink.API` folder.
+2.  Open `appsettings.json` and update the **Connection String** to match your local SQL Server instance.
+3.  Run the application:
+    ```bash
+    dotnet run
+    ```
+4.  The API will start at `http://localhost:5000` (or similar).
+
+### 3. Frontend Setup 💻
+1.  Navigate to the `pharmalink-web` folder.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+4.  Open your browser at `http://localhost:5173`.
+
+---
+
+## 🔑 Default Credentials
+Use these accounts to test the system (created by `DatabaseSetup.sql`):
+
+| Role | Username | Password |
+| :--- | :--- | :--- |
+| **Admin** | `admin` | `admin123` |
+| **Pharmacist** | `user` | `user123` |
+
+---
+
+## 📂 Project Structure
