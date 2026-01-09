@@ -91,3 +91,8 @@ Use these accounts to test the system (created by `DatabaseSetup.sql`):
 ---
 
 ## 📂 Project Structure
+src/ ├── features/ # Feature-based modules (The "Pages") │ ├── auth/ # Login & Authentication logic │ ├── dashboard/ # Analytics graphs & stats │ ├── inventory/ # Medicine tables & modals │ ├── pos/ # Point of Sale terminal │ └── users/ # User management (Admin only) ├── components/ # Reusable UI (Buttons, Modals, Skeleton) ├── context/ # Global State (AuthContext) ├── services/ # API Communication (Axios) └── layouts/ # Main Dashboard Wrapper (Sidebar + Outlet)
+
+---
+
+*© 2025 PharmaLink System. All Rights Reserved.*
