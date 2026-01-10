@@ -3,6 +3,9 @@
 
 PharmaLink is a full-stack **Pharmacy Management System** designed to streamline inventory tracking, sales processing, and user administration. It features a secure, role-based architecture separating **Admins** (Inventory/User Managers) from **Pharmacists** (Point of Sale/Sales).
 
+
+![PharmaLink Dashboard Preview](./src/assets/dashboard-preview.png)
+
 ---
 
 ## 🚀 Tech Stack
