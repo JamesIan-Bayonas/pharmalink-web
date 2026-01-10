@@ -1,98 +1,147 @@
-# PharmaLink 🏥
-### Efficient Management for Modern Pharmacies
 
-PharmaLink is a full-stack **Pharmacy Management System** designed to streamline inventory tracking, sales processing, and user administration. It features a secure, role-based architecture separating **Admins** (Inventory/User Managers) from **Pharmacists** (Point of Sale/Sales).
+### **PharmaLink Web (Frontend)**
 
----
+# PharmaLink
 
-## 🚀 Tech Stack
+### Modern Pharmacy Management System (Frontend)
 
-### **Frontend**
-* **Framework:** React 18 (Vite)
-* **Language:** TypeScript
-* **Styling:** Tailwind CSS
-* **State Management:** React Context API (Auth)
-* **Routing:** React Router DOM v6
-* **Charts:** Recharts
-
-### **Backend** (API)
-* **Framework:** ASP.NET Core Web API 8.0
-* **Language:** C#
-* **ORM:** Dapper / ADO.NET
-* **Database:** Microsoft SQL Server
-* **Authentication:** JWT (JSON Web Tokens)
+**PharmaLink Web** is the client-side application for the PharmaLink system. Built with **React 18** and **TypeScript**, it provides a responsive, role-based interface for managing pharmacy operations—from inventory tracking to point-of-sale transactions.
 
 ---
 
-## ✨ Key Features
+## Critical System Context
 
-### 🛡️ **Role-Based Access Control (RBAC)**
-* **Admin**: Full access to Inventory, Categories, User Management, and Dashboard Analytics.
-* **Pharmacist**: Restricted access to POS Terminal, Sales History, and Personal Profile.
-* **Security**: Routes are protected via `ProtectedRoutes` and `RoleRoute` guards.
+**This project is the Frontend only.**
+It relies entirely on the **PharmaLink API** (Backend) to function. You **must** have the backend API running locally for this application to load data or authenticate users.
 
-### 💊 **Inventory Management**
-* Real-time stock tracking.
-* "Low Stock" and "Expiring Soon" filters.
-* Add, Edit, Delete, and Restock medicines.
+👉 **Get the Backend Here:** **[PharmaLink API Repository](https://github.com/JamesIan-Bayonas/pharmalink)**
 
-### 🛒 **Point of Sale (POS)**
-* Fast product search and cart management.
-* Real-time total calculation.
-* Generates printable receipts.
-* Automatic stock deduction upon sale completion.
-
-### 📊 **Dashboard Analytics**
-* Visual charts for weekly sales trends.
-* Key metrics: Total Revenue, Low Stock Alerts, Expiring Items.
+*Ensure the API is running at `http://localhost:5297` (or your configured port) before starting this application.*
 
 ---
 
-## 🛠️ Setup Instructions
+## 🏗️ Architecture & Integration
 
-### 1. Database Setup 🗄️
-Before running the API, you must configure the database.
-1.  Open **Microsoft SQL Server Management Studio (SSMS)**.
-2.  Create a new database named `PharmaLinkDB`.
-3.  Open the file `DatabaseSetup.sql` provided in the backend folder.
-4.  **Execute** the script to generate the required Tables (`Users`, `Medicines`, `Sales`, etc.) and Seed Data (Default Admin/Pharmacist accounts).
+This project implements a strict **Client-Server Architecture**.
 
-### 2. Backend API Setup ⚙️
-1.  Navigate to the `PharmaLink.API` folder.
-2.  Open `appsettings.json` and update the **Connection String** to match your local SQL Server instance.
-3.  Run the application:
-    ```bash
-    dotnet run
-    ```
-4.  The API will start at `http://localhost:5000` (or similar).
-
-### 3. Frontend Setup 💻
-1.  Navigate to the `pharmalink-web` folder.
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the development server:
-    ```bash
-    npm run dev
-    ```
-4.  Open your browser at `http://localhost:5173`.
+* **Communication:** All data fetch requests are handled via a centralized **Service Layer** pattern, decoupling UI components from API logic.
+* **Security:** Authentication is managed via **JWT (JSON Web Tokens)**.
+* **Axios Interceptor:** Automatically attaches the `Bearer` token to every outgoing request.
+* **Route Guards:** The `ProtectedRoutes` component prevents unauthorized access based on user roles (Admin vs. Pharmacist).
 
 ---
 
-## 🔑 Default Credentials
-Use these accounts to test the system (created by `DatabaseSetup.sql`):
+## Key Features
 
-| Role | Username | Password |
-| :--- | :--- | :--- |
-| **Admin** | `admin` | `admin123` |
-| **Pharmacist** | `user` | `user123` |
+### **1. Role-Based Access Control (RBAC)**
+
+* **Admin View:** Full access to User Management, Inventory Control, and Analytics.
+* **Pharmacist View:** Restricted to POS Terminal and Sales History only.
+
+### **2. Point of Sale (POS)**
+
+* Real-time cart management with automatic total calculation.
+* Generates printable receipts via `PrintableReciept` component.
+* Stock is automatically deducted upon transaction completion.
+
+### **3. Inventory Management**
+
+* **Live Tracking:** View stock levels, expiry dates, and categories.
+* **Restocking:** Dedicated modals for adding stock to existing items.
+
+### **4. Dashboard Analytics**
+
+* Visualizes key metrics (Total Revenue, Low Stock Alerts) using interactive charts.
 
 ---
 
 ## 📂 Project Structure
-src/ ├── features/ # Feature-based modules (The "Pages") │ ├── auth/ # Login & Authentication logic │ ├── dashboard/ # Analytics graphs & stats │ ├── inventory/ # Medicine tables & modals │ ├── pos/ # Point of Sale terminal │ └── users/ # User management (Admin only) ├── components/ # Reusable UI (Buttons, Modals, Skeleton) ├── context/ # Global State (AuthContext) ├── services/ # API Communication (Axios) └── layouts/ # Main Dashboard Wrapper (Sidebar + Outlet)
+
+This project follows a **Feature-Based** directory structure for better scalability.
+
+```text
+src/
+├── assets/                 # Static assets (images, icons)
+├── components/             
+│   └── common/             # Reusable UI (e.g., PageSkeleton, Modals)
+├── context/                
+│   └── AuthContext.tsx     # Global Auth State (User Session)
+├── features/               # Main Application Modules
+│   ├── auth/               # Login Screen
+│   ├── categories/         # Category Management Pages
+│   ├── dashboard/          # Analytics & Graphs
+│   ├── inventory/          # Medicine List & Add/Edit Modals
+│   ├── pos/                # POS Terminal & Receipt Printing
+│   ├── sales/              # Sales History Tables
+│   └── users/              # Admin User Management
+├── layouts/                
+│   └── DashboardLayout.tsx # Sidebar + Navbar Wrapper
+├── routes/                 
+│   └── ProtectedRoutes.tsx # Security Guard Logic
+├── services/               # API Communication Layer
+│   ├── api.ts              # Axios Instance (Interceptors)
+│   ├── medicineService.ts  # Inventory CRUD
+│   ├── saleService.ts      # Transaction Logic
+│   └── userService.ts      # User Administration
+├── App.tsx                 # Main Route Definitions
+└── main.tsx                # Entry Point
+
+```
 
 ---
 
-*© 2025 PharmaLink System. All Rights Reserved.*
+## Getting Started
+
+### **Prerequisites**
+
+* **Node.js** (v18 or higher)
+* **The Backend API** (Running locally)
+
+### **Installation**
+
+1. **Clone the Repository**
+```bash
+git clone https://github.com/JamesIan-Bayonas/pharmalink-web.git
+cd pharmalink-web
+
+```
+
+2. **Install Dependencies**
+```bash
+npm install
+
+```
+
+3. **Start the Development Server**
+```bash
+npm run dev
+
+```
+
+4. **Access the App**
+Open your browser to `http://localhost:5173`.
+
+---
+
+## Tech Stack
+
+* **Framework:** [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+* **Language:** [TypeScript](https://www.typescriptlang.org/)
+* **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+* **HTTP Client:** [Axios](https://axios-http.com/)
+* **Routing:** [React Router DOM](https://reactrouter.com/)
+
+---
+
+### **Troubleshooting**
+
+* **"Network Error" / API Connection Failed:**
+* Ensure the .NET Backend is running.
+* Check `src/services/api.ts` and verify the `baseURL` matches your local API port (default is `http://localhost:5297/api`).
+
+* **Login Loops:**
+* If your token expires, the Axios interceptor will automatically redirect you to `/login`. Clear your LocalStorage if you get stuck.
+
+---
+
+*© 2026 PharmaLink System. Developed by James Ian Bayonas.*
